@@ -50,7 +50,7 @@
 
     --glow-a:#8E9BFF; --glow-op-a:0.15;
     --glow-b:#3FD6B4; --glow-op-b:0.10;
-    --chart-op:0.52;
+    --chart-op:0.46;
 
     --card-shadow:0 1px 2px rgba(15,23,42,0.04), 0 10px 26px -14px rgba(15,23,42,0.14);
     --card-shadow-hover:0 2px 6px rgba(15,23,42,0.06), 0 24px 44px -20px rgba(15,23,42,0.22);
@@ -97,7 +97,7 @@
 
     --glow-a:#4553D8; --glow-op-a:0.24;
     --glow-b:#13A48B; --glow-op-b:0.18;
-    --chart-op:0.68;
+    --chart-op:0.62;
 
     --card-shadow:none;
     --card-shadow-hover:0 18px 40px -24px rgba(0,0,0,0.70);
@@ -189,55 +189,30 @@
   .hero__glow.b{ width:420px; height:420px; background:var(--glow-b); opacity:var(--glow-op-b); top:120px; left:-220px; }
 
   .hero__chart{
-    position:absolute; right:30px; bottom:6px; z-index:0;
-    width:min(52%,620px); height:322px;
+    position:absolute; right:28px; bottom:4px; z-index:0;
+    width:min(56%,660px); height:330px;
     pointer-events:none; opacity:var(--chart-op);
-    -webkit-mask-image:linear-gradient(90deg, transparent, #000 38%);
-    mask-image:linear-gradient(90deg, transparent, #000 38%);
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 40%);
+    mask-image:linear-gradient(90deg, transparent, #000 40%);
   }
   .hero__chart svg{ width:100%; height:100%; display:block; }
-
-  .hero__chart .g-a-top{ stop-color:var(--research); stop-opacity:0.30; }
-  .hero__chart .g-a-bot{ stop-color:var(--research); stop-opacity:0; }
-  .hero__chart .g-b-top{ stop-color:var(--applied); stop-opacity:0.22; }
-  .hero__chart .g-b-bot{ stop-color:var(--applied); stop-opacity:0; }
-
-  .hero__chart .grid line{
-    stroke:var(--fg-3); stroke-width:1; opacity:0.17; stroke-dasharray:1 8; stroke-linecap:round;
+  .hero__chart .g-r-top{ stop-color:var(--research); }
+  .hero__chart .g-r-bot{ stop-color:var(--applied); }
+  .hero__chart .rg-mask{ fill:var(--bg); }
+  .hero__chart .rg-fill{ fill:url(#ridgeGrad); fill-opacity:0.12; }
+  .hero__chart .rg-line{
+    fill:none; stroke:url(#ridgeGrad); stroke-width:1.4;
+    stroke-linejoin:round; stroke-linecap:round;
   }
-  .hero__chart .area{ opacity:0; animation:chartFade 1.2s ease .5s forwards; }
-  .hero__chart .line{
-    fill:none; stroke-linecap:round; stroke-linejoin:round;
-    stroke-dasharray:1500; stroke-dashoffset:1500;
-    animation:chartDraw 1.9s cubic-bezier(.22,.75,.28,1) forwards;
+  .hero__chart .ridge{
+    opacity:0; animation:ridgeIn .95s cubic-bezier(.22,.75,.28,1) forwards;
   }
-  .hero__chart .line--a{ stroke:var(--research); stroke-width:2.2; }
-  .hero__chart .line--b{ stroke:var(--applied); stroke-width:1.7; opacity:0.72; animation-delay:.16s; }
-  .hero__chart .node{
-    opacity:0; animation:chartFade .55s ease forwards;
-    stroke-width:2; fill:var(--bg);
-  }
-  .hero__chart .node--a{ stroke:var(--research); }
-  .hero__chart .node--b{ stroke:var(--applied); }
-  .hero__chart .node.n1{ animation-delay:1.05s; }
-  .hero__chart .node.n2{ animation-delay:1.42s; }
-  .hero__chart .node.n3{ animation-delay:1.78s; }
-  .hero__chart .pulse{
-    fill:none; stroke:var(--research); stroke-width:1.4; opacity:0;
-    transform-box:fill-box; transform-origin:center;
-    animation:chartPulse 3.4s ease-out 2.1s infinite;
-  }
-  @keyframes chartDraw{ to{ stroke-dashoffset:0; } }
-  @keyframes chartFade{ to{ opacity:1; } }
-  @keyframes chartPulse{
-    0%{ transform:scale(0.55); opacity:0.5; }
-    70%{ opacity:0; }
-    100%{ transform:scale(2.6); opacity:0; }
+  @keyframes ridgeIn{
+    from{ opacity:0; transform:translateY(16px); }
+    to{ opacity:1; transform:none; }
   }
   @media (prefers-reduced-motion: reduce){
-    .hero__chart .line{ stroke-dashoffset:0; }
-    .hero__chart .area, .hero__chart .node{ opacity:1; }
-    .hero__chart .pulse{ display:none; }
+    .hero__chart .ridge{ opacity:1; }
   }
 
   .hero .wrap{ position:relative; z-index:1; }
@@ -427,11 +402,12 @@
   .modal-overlay.open{ display:flex; }
   .modal-box{
     background:var(--bg-2); border:1px solid var(--line);
-    border-radius:20px; width:100%; max-width:1220px; max-height:94vh;
+    border-radius:20px; width:100%; max-width:1520px; max-height:96vh;
     display:flex; flex-direction:column; overflow:hidden;
     box-shadow:var(--modal-shadow);
     --track:var(--research); --track-dim:var(--research-dim); --track-line:var(--research-line);
   }
+  .modal-box.has-doc{ height:96vh; }
   .modal-box.applied{ --track:var(--applied); --track-dim:var(--applied-dim); --track-line:var(--applied-line); }
 
   .modal-head{
@@ -460,21 +436,41 @@
 
   .modal-body{
     flex:1; min-height:0;
-    display:grid; grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);
+    display:grid; grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);
   }
   .modal-body.solo{ grid-template-columns:minmax(0,1fr); }
+  .modal-body.wide{ grid-template-columns:minmax(0,1fr); }
+  .modal-body.wide .pane--detail{ display:none; }
+  .modal-body.wide .pane--doc{ border-right:none; }
 
   .pane{ min-width:0; min-height:0; overflow-y:auto; }
   .pane--doc{
-    padding:22px 26px 24px; border-right:1px solid var(--line-soft);
-    display:flex; flex-direction:column; background:var(--bg);
+    padding:18px 20px 16px; border-right:1px solid var(--line-soft);
+    display:flex; flex-direction:column; background:var(--bg); overflow:hidden;
   }
   .modal-body.solo .pane--doc{ border-right:none; }
   .pane--detail{ padding:28px 34px 40px; }
   .modal-body.solo .pane--detail{ padding:30px 32px 48px; }
-  .modal-body.solo .pane--doc{ width:100%; max-width:920px; margin:0 auto; }
+  .modal-body.solo .pane--doc{ width:100%; max-width:1180px; margin:0 auto; }
 
-  .doc-tabs{ display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+  .doc-bar{
+    display:flex; align-items:center; justify-content:flex-end;
+    gap:12px; margin-bottom:12px; flex-shrink:0;
+  }
+  .doc-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-right:auto; }
+  .doc-wide{
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    width:31px; height:31px; padding:0; cursor:pointer;
+    color:var(--fg-3); background:transparent;
+    border:1px solid var(--line); border-radius:999px;
+    transition:color .18s ease, border-color .18s ease, background-color .18s ease;
+  }
+  .doc-wide svg{ width:15px; height:15px; }
+  .doc-wide:hover{ color:var(--fg); border-color:var(--fg-3); }
+  .doc-wide .i-collapse{ display:none; }
+  .modal-body.wide .doc-wide{ color:var(--track); border-color:var(--track-line); background:var(--track-dim); }
+  .modal-body.wide .doc-wide .i-expand{ display:none; }
+  .modal-body.wide .doc-wide .i-collapse{ display:block; }
   .doc-tab{
     font-family:var(--sans); font-size:12.5px; font-weight:600;
     color:var(--fg-3); background:transparent;
@@ -485,17 +481,23 @@
   .doc-tab:hover{ color:var(--fg-2); }
   .doc-tab.active{ color:var(--track); border-color:var(--track-line); background:var(--track-dim); }
 
-  .pdf-stage{
-    position:relative; flex:1; display:flex; align-items:center; justify-content:center;
+  .pdf-frame{
+    position:relative; flex:1 1 auto; min-height:260px;
     background:var(--panel); border:1px solid var(--line-soft);
-    border-radius:var(--r-md); min-height:340px; padding:18px; overflow:auto;
+    border-radius:var(--r-md);
+  }
+  .pdf-stage{
+    position:absolute; inset:0; display:flex;
+    padding:16px; overflow:auto; border-radius:inherit;
+    overscroll-behavior:contain;
   }
   .pdf-stage canvas{
-    max-width:100%; height:auto; display:block; cursor:pointer;
+    margin:auto; max-width:none; height:auto; display:block;
     border-radius:3px; box-shadow:var(--canvas-shadow);
   }
+  .pdf-stage.can-page canvas{ cursor:pointer; }
   .pdf-status{
-    margin:0; padding:0 28px; text-align:center;
+    margin:auto; padding:0 28px; text-align:center;
     font-size:13.5px; color:var(--fg-3); line-height:1.7; max-width:44ch;
   }
   .pdf-status b{ display:block; color:var(--fg-2); font-weight:600; margin-bottom:6px; font-size:14.5px; }
@@ -514,8 +516,22 @@
   .pdf-nav-btn:disabled{ opacity:0.22; cursor:default; }
   .pdf-meta{
     display:flex; justify-content:space-between; align-items:center;
-    margin-top:14px; font-size:12.5px; color:var(--fg-3);
+    gap:14px; margin-top:12px; font-size:12.5px; color:var(--fg-3); flex-shrink:0;
   }
+  .pdf-zoom{ display:flex; align-items:center; gap:4px; }
+  .pdf-zoom button{
+    font-family:var(--sans); font-size:12.5px; font-weight:600;
+    color:var(--fg-3); background:transparent;
+    border:1px solid var(--line); border-radius:999px;
+    height:27px; min-width:27px; padding:0 9px; cursor:pointer; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+    transition:color .18s ease, border-color .18s ease, background-color .18s ease;
+  }
+  .pdf-zoom button:hover:not(:disabled){ color:var(--track); border-color:var(--track-line); }
+  .pdf-zoom button:disabled{ opacity:0.3; cursor:default; }
+  .pdf-zoom .lvl{ font-family:var(--mono); min-width:54px; letter-spacing:0.01em; }
+  .pdf-zoom .fit{ margin-left:6px; }
+  .pdf-zoom .fit.width{ color:var(--track); border-color:var(--track-line); background:var(--track-dim); }
   .pdf-meta .page{ font-family:var(--mono); font-weight:500; letter-spacing:0.02em; }
   .pdf-meta a{ text-decoration:none; color:var(--fg-3); font-weight:600; }
   .pdf-meta a:hover{ color:var(--track); }
@@ -630,8 +646,14 @@
     .modal-box{ max-width:none; max-height:100vh; height:100vh; border-radius:0; border:none; }
     .modal-body{ display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; }
     .pane{ overflow:visible; }
-    .pdf-stage{ flex:none; min-height:52vh; }
-    .pane--doc{ border-right:none; border-bottom:1px solid var(--line-soft); }
+    .pdf-frame{ flex:none; min-height:64vh; }
+    .pdf-stage{ overscroll-behavior:auto; }
+    .doc-wide{ display:none; }
+    .pdf-meta{ flex-wrap:wrap; gap:10px; }
+    .pane--doc{
+      overflow:visible; padding:16px 16px 14px;
+      border-right:none; border-bottom:1px solid var(--line-soft);
+    }
     .pane--detail{ padding:26px 22px 44px; }
     .modal-head{ padding:22px 56px 18px 22px; }
     .metric-strip{ gap:22px; }
@@ -662,6 +684,18 @@
   <symbol id="icon-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
     <polyline points="22,6 12,13 2,6"></polyline>
+  </symbol>
+  <symbol id="icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="10.5" y1="12" x2="3.5" y2="12"></line>
+    <polyline points="7 8.5 3.5 12 7 15.5"></polyline>
+    <line x1="13.5" y1="12" x2="20.5" y2="12"></line>
+    <polyline points="17 8.5 20.5 12 17 15.5"></polyline>
+  </symbol>
+  <symbol id="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3.5" y1="12" x2="10.5" y2="12"></line>
+    <polyline points="7 8.5 10.5 12 7 15.5"></polyline>
+    <line x1="20.5" y1="12" x2="13.5" y2="12"></line>
+    <polyline points="17 8.5 13.5 12 17 15.5"></polyline>
   </symbol>
   <symbol id="icon-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <rect x="2.6" y="2.6" width="18.8" height="18.8" rx="5.4"></rect>
@@ -696,35 +730,73 @@
   <div class="hero__glow a"></div>
   <div class="hero__glow b"></div>
   <div class="hero__chart" aria-hidden="true">
-    <svg viewBox="0 0 660 320" preserveAspectRatio="xMaxYMax meet" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 660 340" preserveAspectRatio="xMaxYMax meet" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="chartFillA" x1="0" y1="50" x2="0" y2="316" gradientUnits="userSpaceOnUse">
-          <stop class="g-a-top" offset="0"></stop>
-          <stop class="g-a-bot" offset="1"></stop>
+        <linearGradient id="ridgeGrad" x1="0" y1="18" x2="0" y2="302" gradientUnits="userSpaceOnUse">
+          <stop class="g-r-top" offset="0"></stop>
+          <stop class="g-r-bot" offset="1"></stop>
         </linearGradient>
-        <linearGradient id="chartFillB" x1="0" y1="160" x2="0" y2="316" gradientUnits="userSpaceOnUse">
-          <stop class="g-b-top" offset="0"></stop>
-          <stop class="g-b-bot" offset="1"></stop>
-        </linearGradient>
+        <polygon id="rg0" points="18,99.8 27,99.7 36,99.4 46,99.0 55,98.2 64,97.1 73,95.4 82,93.1 91,90.0 101,86.2 110,81.7 119,76.7 128,71.5 137,66.5 146,62.3 156,59.1 165,57.5 174,57.3 183,58.6 192,60.9 202,63.8 211,66.6 220,68.7 229,69.6 238,68.9 247,66.5 257,62.4 266,56.8 275,50.3 284,43.4 293,36.7 302,30.9 312,26.6 321,24.2 330,24.0 339,26.0 348,30.1 358,35.9 367,43.0 376,50.7 385,58.7 394,66.3 403,73.1 413,78.9 422,83.4 431,86.5 440,88.2 449,88.6 458,88.0 468,86.7 477,85.2 486,84.0 495,83.4 504,83.2 514,83.1 523,82.4 532,80.6 541,77.8 550,74.6 559,72.3 569,72.1 578,74.6 587,79.2 596,84.9 605,90.2 614,94.4 624,97.1 633,98.7 642,99.5 642,100.0 18,100.0"></polygon>
+        <polygon id="rg1" points="18,122.0 27,121.9 36,121.7 46,121.2 55,120.6 64,119.5 73,118.0 82,115.8 91,112.8 101,109.1 110,104.5 119,99.3 128,93.7 137,88.0 146,82.8 156,78.5 165,75.5 174,74.3 183,74.7 192,76.8 202,80.2 211,84.3 220,88.5 229,92.3 238,94.9 247,96.1 257,95.4 266,92.9 275,88.5 284,82.7 293,75.7 302,68.3 312,61.1 321,54.7 330,49.8 339,46.8 348,46.2 358,47.9 367,51.8 376,57.6 385,64.6 394,72.2 403,79.9 413,86.9 422,92.7 431,97.1 440,100.0 449,101.5 458,101.9 468,101.7 477,101.4 486,101.4 495,101.8 504,102.2 514,102.3 523,101.5 532,99.5 541,96.6 550,93.8 559,92.3 569,93.1 578,96.4 587,101.6 596,107.3 605,112.6 614,116.6 624,119.3 633,120.8 642,121.6 642,122.2 18,122.2"></polygon>
+        <polygon id="rg2" points="18,144.3 27,144.3 36,144.1 46,143.9 55,143.5 64,142.9 73,142.0 82,140.6 91,138.6 101,135.9 110,132.3 119,127.9 128,122.8 137,117.0 146,110.9 156,104.8 165,99.4 174,95.0 183,91.9 192,90.5 202,90.6 211,92.0 220,94.3 229,96.9 238,99.0 247,100.1 257,99.8 266,97.8 275,94.2 284,89.3 293,83.7 302,78.1 312,73.3 321,69.8 330,68.4 339,69.3 348,72.4 358,77.6 367,84.4 376,92.2 385,100.3 394,108.0 403,114.7 413,120.0 422,123.4 431,124.9 440,124.3 449,122.0 458,118.4 468,114.0 477,109.7 486,106.1 495,103.6 504,102.2 514,101.7 523,101.7 532,101.9 541,102.4 550,103.7 559,106.3 569,110.6 578,116.5 587,123.1 596,129.5 605,134.8 614,138.8 624,141.5 633,143.0 642,143.8 642,144.4 18,144.4"></polygon>
+        <polygon id="rg3" points="18,166.6 27,166.5 36,166.3 46,166.0 55,165.4 64,164.6 73,163.3 82,161.3 91,158.6 101,155.0 110,150.2 119,144.3 128,137.3 137,129.5 146,121.1 156,112.7 165,105.0 174,98.5 183,93.7 192,91.1 202,90.7 211,92.4 220,95.8 229,100.1 238,104.7 247,108.6 257,111.3 266,112.3 275,111.5 284,109.0 293,105.5 302,101.5 312,97.9 321,95.4 330,94.6 339,95.8 348,99.0 358,104.0 367,110.1 376,116.8 385,123.1 394,128.3 403,131.9 413,133.6 422,133.3 431,131.3 440,128.2 449,124.9 458,122.0 468,120.3 477,120.2 486,121.6 495,124.1 504,126.9 514,129.3 523,130.8 532,131.2 541,131.2 550,131.5 559,133.2 569,136.6 578,141.5 587,147.3 596,153.0 605,157.8 614,161.4 624,163.9 633,165.3 642,166.1 642,166.7 18,166.7"></polygon>
+        <polygon id="rg4" points="18,188.7 27,188.6 36,188.3 46,187.9 55,187.2 64,186.1 73,184.5 82,182.3 91,179.2 101,175.2 110,170.1 119,163.9 128,156.7 137,148.8 146,140.5 156,132.5 165,125.1 174,119.1 183,114.9 192,112.9 202,113.1 211,115.5 220,119.5 229,124.7 238,130.1 247,135.1 257,139.0 266,141.1 275,141.4 284,139.8 293,136.6 302,132.5 312,128.3 321,124.7 330,122.4 339,122.0 348,123.6 358,127.1 367,132.2 376,138.0 385,143.9 394,149.1 403,152.8 413,154.7 422,154.4 431,152.3 440,148.6 449,144.1 458,139.6 468,135.8 477,133.3 486,132.3 495,132.8 504,134.2 514,136.1 523,138.2 532,140.3 541,142.7 550,146.0 559,150.4 569,156.0 578,162.5 587,169.1 596,175.1 605,180.0 614,183.6 624,186.0 633,187.4 642,188.2 642,188.9 18,188.9"></polygon>
+        <polygon id="rg5" points="18,211.0 27,211.0 36,210.9 46,210.7 55,210.4 64,209.9 73,209.1 82,208.0 91,206.3 101,204.0 110,200.9 119,196.9 128,191.8 137,185.8 146,178.9 156,171.3 165,163.5 174,155.7 183,148.7 192,142.8 202,138.4 211,135.8 220,135.1 229,136.0 238,138.2 247,141.0 257,143.9 266,146.3 275,147.7 284,148.0 293,147.3 302,146.0 312,144.7 321,144.0 330,144.3 339,146.0 348,149.1 358,153.1 367,157.7 376,162.1 385,165.6 394,167.8 403,168.3 413,167.2 422,164.9 431,162.0 440,159.1 449,156.9 458,156.0 468,156.7 477,158.8 486,162.1 495,165.9 504,169.7 514,173.0 523,175.5 532,177.5 541,179.5 550,181.8 559,184.8 569,188.7 578,193.1 587,197.6 596,201.6 605,204.9 614,207.4 624,209.0 633,210.0 642,210.6 642,211.1 18,211.1"></polygon>
+        <polygon id="rg6" points="18,233.3 27,233.3 36,233.2 46,233.1 55,233.0 64,232.8 73,232.5 82,231.9 91,231.1 101,230.0 110,228.3 119,226.1 128,223.1 137,219.4 146,214.7 156,209.3 165,203.1 174,196.3 183,189.4 192,182.5 202,176.0 211,170.3 220,165.6 229,162.1 238,159.6 247,158.1 257,157.4 266,157.3 275,157.6 284,158.3 293,159.5 302,161.4 312,164.2 321,167.8 330,172.4 339,177.7 348,183.2 358,188.5 367,192.9 376,196.1 385,197.7 394,197.8 403,196.5 413,194.4 422,191.8 431,189.5 440,187.9 449,187.3 458,188.1 468,190.1 477,193.0 486,196.5 495,200.1 504,203.3 514,206.0 523,208.1 532,209.8 541,211.4 550,213.3 559,215.6 569,218.4 578,221.4 587,224.4 596,227.1 605,229.2 614,230.8 624,231.9 633,232.6 642,232.9 642,233.3 18,233.3"></polygon>
+        <polygon id="rg7" points="18,255.5 27,255.4 36,255.3 46,255.1 55,254.7 64,254.2 73,253.4 82,252.3 91,250.8 101,248.7 110,245.9 119,242.4 128,238.2 137,233.2 146,227.5 156,221.3 165,214.8 174,208.4 183,202.2 192,196.6 202,191.7 211,187.8 220,184.7 229,182.4 238,180.8 247,179.9 257,179.6 266,180.1 275,181.5 284,184.0 293,187.8 302,192.7 312,198.6 321,205.0 330,211.3 339,216.9 348,221.1 358,223.7 367,224.3 376,223.0 385,220.1 394,215.9 403,211.1 413,206.4 422,202.2 431,199.2 440,197.8 449,198.0 458,199.9 468,203.2 477,207.5 486,212.3 495,217.1 504,221.4 514,225.1 523,228.3 532,230.9 541,233.4 550,236.0 559,238.8 569,241.8 578,244.8 587,247.6 596,250.0 605,251.9 614,253.4 624,254.3 633,254.9 642,255.3 642,255.6 18,255.6"></polygon>
+        <polygon id="rg8" points="18,277.8 27,277.8 36,277.7 46,277.7 55,277.6 64,277.5 73,277.2 82,276.9 91,276.4 101,275.6 110,274.6 119,273.1 128,271.1 137,268.6 146,265.3 156,261.4 165,256.7 174,251.2 183,245.1 192,238.5 202,231.5 211,224.5 220,217.7 229,211.7 238,206.7 247,203.3 257,201.8 266,202.4 275,205.1 284,209.7 293,215.8 302,222.8 312,230.0 321,236.8 330,242.4 339,246.5 348,248.8 358,249.4 367,248.3 376,245.9 385,242.6 394,238.8 403,235.0 413,231.7 422,229.4 431,228.1 440,228.3 449,229.7 458,232.3 468,235.9 477,239.9 486,244.1 495,248.2 504,251.8 514,254.9 523,257.6 532,259.9 541,262.0 550,264.1 559,266.3 569,268.5 578,270.6 587,272.5 596,274.1 605,275.4 614,276.3 624,276.9 633,277.3 642,277.6 642,277.8 18,277.8"></polygon>
+        <polygon id="rg9" points="18,300.0 27,299.9 36,299.9 46,299.8 55,299.7 64,299.5 73,299.2 82,298.7 91,298.0 101,297.0 110,295.7 119,293.8 128,291.5 137,288.5 146,284.8 156,280.5 165,275.5 174,269.8 183,263.6 192,257.1 202,250.4 211,243.8 220,237.6 229,232.2 238,227.8 247,225.0 257,224.0 266,224.9 275,227.8 284,232.3 293,238.0 302,244.3 312,250.5 321,255.9 330,260.0 339,262.6 348,263.5 358,262.8 367,260.9 376,258.1 385,255.0 394,252.0 403,249.5 413,248.0 422,247.6 431,248.5 440,250.5 449,253.7 458,257.6 468,262.0 477,266.6 486,270.9 495,274.8 504,278.2 514,281.0 523,283.3 532,285.3 541,287.1 550,288.9 559,290.8 569,292.5 578,294.2 587,295.8 596,297.0 605,298.0 614,298.8 624,299.3 633,299.6 642,299.8 642,300.0 18,300.0"></polygon>
       </defs>
-
-      <g class="grid">
-        <line x1="0" y1="92" x2="640" y2="92"></line>
-        <line x1="0" y1="160" x2="640" y2="160"></line>
-        <line x1="0" y1="228" x2="640" y2="228"></line>
-        <line x1="0" y1="296" x2="640" y2="296"></line>
+      <g class="ridge" style="animation-delay:0ms">
+        <use class="rg-mask" href="#rg0"></use>
+        <use class="rg-fill" href="#rg0"></use>
+        <polyline class="rg-line" stroke-opacity="0.52" points="18,99.8 27,99.7 36,99.4 46,99.0 55,98.2 64,97.1 73,95.4 82,93.1 91,90.0 101,86.2 110,81.7 119,76.7 128,71.5 137,66.5 146,62.3 156,59.1 165,57.5 174,57.3 183,58.6 192,60.9 202,63.8 211,66.6 220,68.7 229,69.6 238,68.9 247,66.5 257,62.4 266,56.8 275,50.3 284,43.4 293,36.7 302,30.9 312,26.6 321,24.2 330,24.0 339,26.0 348,30.1 358,35.9 367,43.0 376,50.7 385,58.7 394,66.3 403,73.1 413,78.9 422,83.4 431,86.5 440,88.2 449,88.6 458,88.0 468,86.7 477,85.2 486,84.0 495,83.4 504,83.2 514,83.1 523,82.4 532,80.6 541,77.8 550,74.6 559,72.3 569,72.1 578,74.6 587,79.2 596,84.9 605,90.2 614,94.4 624,97.1 633,98.7 642,99.5"></polyline>
       </g>
-
-      <path class="area" fill="url(#chartFillB)" d="M0,294 C12.0,292.2 56.0,282.9 80,282 C104.0,281.1 136.0,291.0 160,288 C184.0,285.0 216.0,264.7 240,262 C264.0,259.3 296.0,273.3 320,270 C344.0,266.7 376.0,248.1 400,240 C424.0,231.9 456.0,223.5 480,216 C504.0,208.5 536.0,196.6 560,190 C584.0,183.4 628.0,174.7 640,172 L640,320 L0,320 Z"></path>
-      <path class="area" fill="url(#chartFillA)" d="M0,258 C12.0,254.4 56.0,236.4 80,234 C104.0,231.6 136.0,246.8 160,242 C184.0,237.2 216.0,206.5 240,202 C264.0,197.5 296.0,217.7 320,212 C344.0,206.3 376.0,176.3 400,164 C424.0,151.7 456.0,140.8 480,130 C504.0,119.2 536.0,102.8 560,92 C584.0,81.2 628.0,63.1 640,58 L640,320 L0,320 Z"></path>
-
-      <path class="line line--b" d="M0,294 C12.0,292.2 56.0,282.9 80,282 C104.0,281.1 136.0,291.0 160,288 C184.0,285.0 216.0,264.7 240,262 C264.0,259.3 296.0,273.3 320,270 C344.0,266.7 376.0,248.1 400,240 C424.0,231.9 456.0,223.5 480,216 C504.0,208.5 536.0,196.6 560,190 C584.0,183.4 628.0,174.7 640,172"></path>
-      <path class="line line--a" d="M0,258 C12.0,254.4 56.0,236.4 80,234 C104.0,231.6 136.0,246.8 160,242 C184.0,237.2 216.0,206.5 240,202 C264.0,197.5 296.0,217.7 320,212 C344.0,206.3 376.0,176.3 400,164 C424.0,151.7 456.0,140.8 480,130 C504.0,119.2 536.0,102.8 560,92 C584.0,81.2 628.0,63.1 640,58"></path>
-
-      <circle class="node node--b n1" cx="400" cy="240" r="3.4"></circle>
-      <circle class="node node--a n2" cx="400" cy="164" r="4"></circle>
-      <circle class="node node--a n3" cx="620" cy="66" r="4.6"></circle>
-      <circle class="pulse" cx="620" cy="66" r="9"></circle>
+      <g class="ridge" style="animation-delay:60ms">
+        <use class="rg-mask" href="#rg1"></use>
+        <use class="rg-fill" href="#rg1"></use>
+        <polyline class="rg-line" stroke-opacity="0.56" points="18,122.0 27,121.9 36,121.7 46,121.2 55,120.6 64,119.5 73,118.0 82,115.8 91,112.8 101,109.1 110,104.5 119,99.3 128,93.7 137,88.0 146,82.8 156,78.5 165,75.5 174,74.3 183,74.7 192,76.8 202,80.2 211,84.3 220,88.5 229,92.3 238,94.9 247,96.1 257,95.4 266,92.9 275,88.5 284,82.7 293,75.7 302,68.3 312,61.1 321,54.7 330,49.8 339,46.8 348,46.2 358,47.9 367,51.8 376,57.6 385,64.6 394,72.2 403,79.9 413,86.9 422,92.7 431,97.1 440,100.0 449,101.5 458,101.9 468,101.7 477,101.4 486,101.4 495,101.8 504,102.2 514,102.3 523,101.5 532,99.5 541,96.6 550,93.8 559,92.3 569,93.1 578,96.4 587,101.6 596,107.3 605,112.6 614,116.6 624,119.3 633,120.8 642,121.6"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:120ms">
+        <use class="rg-mask" href="#rg2"></use>
+        <use class="rg-fill" href="#rg2"></use>
+        <polyline class="rg-line" stroke-opacity="0.59" points="18,144.3 27,144.3 36,144.1 46,143.9 55,143.5 64,142.9 73,142.0 82,140.6 91,138.6 101,135.9 110,132.3 119,127.9 128,122.8 137,117.0 146,110.9 156,104.8 165,99.4 174,95.0 183,91.9 192,90.5 202,90.6 211,92.0 220,94.3 229,96.9 238,99.0 247,100.1 257,99.8 266,97.8 275,94.2 284,89.3 293,83.7 302,78.1 312,73.3 321,69.8 330,68.4 339,69.3 348,72.4 358,77.6 367,84.4 376,92.2 385,100.3 394,108.0 403,114.7 413,120.0 422,123.4 431,124.9 440,124.3 449,122.0 458,118.4 468,114.0 477,109.7 486,106.1 495,103.6 504,102.2 514,101.7 523,101.7 532,101.9 541,102.4 550,103.7 559,106.3 569,110.6 578,116.5 587,123.1 596,129.5 605,134.8 614,138.8 624,141.5 633,143.0 642,143.8"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:180ms">
+        <use class="rg-mask" href="#rg3"></use>
+        <use class="rg-fill" href="#rg3"></use>
+        <polyline class="rg-line" stroke-opacity="0.63" points="18,166.6 27,166.5 36,166.3 46,166.0 55,165.4 64,164.6 73,163.3 82,161.3 91,158.6 101,155.0 110,150.2 119,144.3 128,137.3 137,129.5 146,121.1 156,112.7 165,105.0 174,98.5 183,93.7 192,91.1 202,90.7 211,92.4 220,95.8 229,100.1 238,104.7 247,108.6 257,111.3 266,112.3 275,111.5 284,109.0 293,105.5 302,101.5 312,97.9 321,95.4 330,94.6 339,95.8 348,99.0 358,104.0 367,110.1 376,116.8 385,123.1 394,128.3 403,131.9 413,133.6 422,133.3 431,131.3 440,128.2 449,124.9 458,122.0 468,120.3 477,120.2 486,121.6 495,124.1 504,126.9 514,129.3 523,130.8 532,131.2 541,131.2 550,131.5 559,133.2 569,136.6 578,141.5 587,147.3 596,153.0 605,157.8 614,161.4 624,163.9 633,165.3 642,166.1"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:240ms">
+        <use class="rg-mask" href="#rg4"></use>
+        <use class="rg-fill" href="#rg4"></use>
+        <polyline class="rg-line" stroke-opacity="0.67" points="18,188.7 27,188.6 36,188.3 46,187.9 55,187.2 64,186.1 73,184.5 82,182.3 91,179.2 101,175.2 110,170.1 119,163.9 128,156.7 137,148.8 146,140.5 156,132.5 165,125.1 174,119.1 183,114.9 192,112.9 202,113.1 211,115.5 220,119.5 229,124.7 238,130.1 247,135.1 257,139.0 266,141.1 275,141.4 284,139.8 293,136.6 302,132.5 312,128.3 321,124.7 330,122.4 339,122.0 348,123.6 358,127.1 367,132.2 376,138.0 385,143.9 394,149.1 403,152.8 413,154.7 422,154.4 431,152.3 440,148.6 449,144.1 458,139.6 468,135.8 477,133.3 486,132.3 495,132.8 504,134.2 514,136.1 523,138.2 532,140.3 541,142.7 550,146.0 559,150.4 569,156.0 578,162.5 587,169.1 596,175.1 605,180.0 614,183.6 624,186.0 633,187.4 642,188.2"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:300ms">
+        <use class="rg-mask" href="#rg5"></use>
+        <use class="rg-fill" href="#rg5"></use>
+        <polyline class="rg-line" stroke-opacity="0.7" points="18,211.0 27,211.0 36,210.9 46,210.7 55,210.4 64,209.9 73,209.1 82,208.0 91,206.3 101,204.0 110,200.9 119,196.9 128,191.8 137,185.8 146,178.9 156,171.3 165,163.5 174,155.7 183,148.7 192,142.8 202,138.4 211,135.8 220,135.1 229,136.0 238,138.2 247,141.0 257,143.9 266,146.3 275,147.7 284,148.0 293,147.3 302,146.0 312,144.7 321,144.0 330,144.3 339,146.0 348,149.1 358,153.1 367,157.7 376,162.1 385,165.6 394,167.8 403,168.3 413,167.2 422,164.9 431,162.0 440,159.1 449,156.9 458,156.0 468,156.7 477,158.8 486,162.1 495,165.9 504,169.7 514,173.0 523,175.5 532,177.5 541,179.5 550,181.8 559,184.8 569,188.7 578,193.1 587,197.6 596,201.6 605,204.9 614,207.4 624,209.0 633,210.0 642,210.6"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:360ms">
+        <use class="rg-mask" href="#rg6"></use>
+        <use class="rg-fill" href="#rg6"></use>
+        <polyline class="rg-line" stroke-opacity="0.74" points="18,233.3 27,233.3 36,233.2 46,233.1 55,233.0 64,232.8 73,232.5 82,231.9 91,231.1 101,230.0 110,228.3 119,226.1 128,223.1 137,219.4 146,214.7 156,209.3 165,203.1 174,196.3 183,189.4 192,182.5 202,176.0 211,170.3 220,165.6 229,162.1 238,159.6 247,158.1 257,157.4 266,157.3 275,157.6 284,158.3 293,159.5 302,161.4 312,164.2 321,167.8 330,172.4 339,177.7 348,183.2 358,188.5 367,192.9 376,196.1 385,197.7 394,197.8 403,196.5 413,194.4 422,191.8 431,189.5 440,187.9 449,187.3 458,188.1 468,190.1 477,193.0 486,196.5 495,200.1 504,203.3 514,206.0 523,208.1 532,209.8 541,211.4 550,213.3 559,215.6 569,218.4 578,221.4 587,224.4 596,227.1 605,229.2 614,230.8 624,231.9 633,232.6 642,232.9"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:420ms">
+        <use class="rg-mask" href="#rg7"></use>
+        <use class="rg-fill" href="#rg7"></use>
+        <polyline class="rg-line" stroke-opacity="0.78" points="18,255.5 27,255.4 36,255.3 46,255.1 55,254.7 64,254.2 73,253.4 82,252.3 91,250.8 101,248.7 110,245.9 119,242.4 128,238.2 137,233.2 146,227.5 156,221.3 165,214.8 174,208.4 183,202.2 192,196.6 202,191.7 211,187.8 220,184.7 229,182.4 238,180.8 247,179.9 257,179.6 266,180.1 275,181.5 284,184.0 293,187.8 302,192.7 312,198.6 321,205.0 330,211.3 339,216.9 348,221.1 358,223.7 367,224.3 376,223.0 385,220.1 394,215.9 403,211.1 413,206.4 422,202.2 431,199.2 440,197.8 449,198.0 458,199.9 468,203.2 477,207.5 486,212.3 495,217.1 504,221.4 514,225.1 523,228.3 532,230.9 541,233.4 550,236.0 559,238.8 569,241.8 578,244.8 587,247.6 596,250.0 605,251.9 614,253.4 624,254.3 633,254.9 642,255.3"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:480ms">
+        <use class="rg-mask" href="#rg8"></use>
+        <use class="rg-fill" href="#rg8"></use>
+        <polyline class="rg-line" stroke-opacity="0.81" points="18,277.8 27,277.8 36,277.7 46,277.7 55,277.6 64,277.5 73,277.2 82,276.9 91,276.4 101,275.6 110,274.6 119,273.1 128,271.1 137,268.6 146,265.3 156,261.4 165,256.7 174,251.2 183,245.1 192,238.5 202,231.5 211,224.5 220,217.7 229,211.7 238,206.7 247,203.3 257,201.8 266,202.4 275,205.1 284,209.7 293,215.8 302,222.8 312,230.0 321,236.8 330,242.4 339,246.5 348,248.8 358,249.4 367,248.3 376,245.9 385,242.6 394,238.8 403,235.0 413,231.7 422,229.4 431,228.1 440,228.3 449,229.7 458,232.3 468,235.9 477,239.9 486,244.1 495,248.2 504,251.8 514,254.9 523,257.6 532,259.9 541,262.0 550,264.1 559,266.3 569,268.5 578,270.6 587,272.5 596,274.1 605,275.4 614,276.3 624,276.9 633,277.3 642,277.6"></polyline>
+      </g>
+      <g class="ridge" style="animation-delay:540ms">
+        <use class="rg-mask" href="#rg9"></use>
+        <use class="rg-fill" href="#rg9"></use>
+        <polyline class="rg-line" stroke-opacity="0.85" points="18,300.0 27,299.9 36,299.9 46,299.8 55,299.7 64,299.5 73,299.2 82,298.7 91,298.0 101,297.0 110,295.7 119,293.8 128,291.5 137,288.5 146,284.8 156,280.5 165,275.5 174,269.8 183,263.6 192,257.1 202,250.4 211,243.8 220,237.6 229,232.2 238,227.8 247,225.0 257,224.0 266,224.9 275,227.8 284,232.3 293,238.0 302,244.3 312,250.5 321,255.9 330,260.0 339,262.6 348,263.5 358,262.8 367,260.9 376,258.1 385,255.0 394,252.0 403,249.5 413,248.0 422,247.6 431,248.5 440,250.5 449,253.7 458,257.6 468,262.0 477,266.6 486,270.9 495,274.8 504,278.2 514,281.0 523,283.3 532,285.3 541,287.1 550,288.9 559,290.8 569,292.5 578,294.2 587,295.8 596,297.0 605,298.0 614,298.8 624,299.3 633,299.6 642,299.8"></polyline>
+      </g>
     </svg>
   </div>
   <div class="wrap">
@@ -820,7 +892,7 @@
         </ul>
       </div>
       <div class="t-item legacy">
-        <span class="t-date">2020.12 — 2022.09</span>
+        <span class="t-date">2021.12 — 2022.09</span>
         <p class="t-role">컬처라이제이션 PM팀</p>
         <p class="t-org">엔씨소프트</p>
         <ul>
@@ -1076,14 +1148,28 @@
     </header>
     <div class="modal-body" id="modalBodyEl">
       <section class="pane pane--doc" id="paneDoc">
-        <div class="doc-tabs" id="docTabs"></div>
-        <div class="pdf-stage" id="pdfStage">
+        <div class="doc-bar">
+          <div class="doc-tabs" id="docTabs"></div>
+          <button class="doc-wide" id="docWideBtn" onclick="toggleDocWide()" title="자료 넓게 보기" aria-label="자료 넓게 보기">
+            <svg class="i-expand" aria-hidden="true"><use href="#icon-expand"></use></svg>
+            <svg class="i-collapse" aria-hidden="true"><use href="#icon-collapse"></use></svg>
+          </button>
+        </div>
+        <div class="pdf-frame">
+          <div class="pdf-stage" id="pdfStage">
+            <canvas id="pdfCanvas"></canvas>
+            <p class="pdf-status" id="pdfStatus"></p>
+          </div>
           <button class="pdf-nav-btn prev" id="pdfPrevBtn" onclick="pdfPrevPage()" aria-label="이전 페이지">&#8249;</button>
-          <canvas id="pdfCanvas"></canvas>
-          <p class="pdf-status" id="pdfStatus"></p>
           <button class="pdf-nav-btn next" id="pdfNextBtn" onclick="pdfNextPage()" aria-label="다음 페이지">&#8250;</button>
         </div>
         <div class="pdf-meta">
+          <div class="pdf-zoom">
+            <button id="zoomOutBtn" onclick="pdfZoom(-1)" aria-label="축소">&minus;</button>
+            <button class="lvl" id="zoomLevel" onclick="pdfZoomReset()" title="배율 초기화">100%</button>
+            <button id="zoomInBtn" onclick="pdfZoom(1)" aria-label="확대">+</button>
+            <button class="fit" id="fitBtn" onclick="pdfToggleFit()" title="가로 맞춤 / 전체 맞춤 전환">전체 맞춤</button>
+          </div>
           <span class="page" id="pdfPageIndicator"></span>
           <a id="pdfDownloadLink" href="#" target="_blank" rel="noopener">새 탭에서 원본 열기</a>
         </div>
@@ -1281,7 +1367,8 @@
     { key:'results',      label:'성과' }
   ];
 
-  var pdfState = { doc:null, page:1, total:0, token:0 };
+  var pdfState = { doc:null, page:1, total:0, token:0, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
+  var ZOOM_MIN = 0.5, ZOOM_MAX = 3.2, ZOOM_STEP = 0.25;
   var current = { id:null, docIndex:0 };
 
   function el(id){ return document.getElementById(id); }
@@ -1309,6 +1396,9 @@
     el('paneDoc').style.display = hasDocs ? '' : 'none';
     el('paneDetail').style.display = hasDetail ? '' : 'none';
     el('modalBodyEl').classList.toggle('solo', !hasDocs || !hasDetail);
+    el('modalBodyEl').classList.remove('wide');
+    el('modalBox').classList.toggle('has-doc', hasDocs);
+    el('docWideBtn').style.display = (hasDocs && hasDetail) ? '' : 'none';
 
     if (hasDetail) renderDetail(p);
     if (hasDocs) renderDocTabs(p);
@@ -1368,7 +1458,10 @@
   /* ---------- PDF ---------- */
   function loadDoc(url){
     var token = ++pdfState.token;
+    cancelRender();
     pdfState.doc = null;
+    pdfState.zoom = 1;
+    pdfState.fit = 'auto';
     el('pdfDownloadLink').href = url;
     el('pdfPageIndicator').textContent = '';
     el('pdfPrevBtn').disabled = true;
@@ -1405,31 +1498,120 @@
     }
   }
 
-  function renderPdfPage(num){
+  function cancelRender(){
+    if (pdfState.task){
+      try { pdfState.task.cancel(); } catch(e){}
+      pdfState.task = null;
+    }
+  }
+
+  /* 세로형(논문) 문서는 가로 폭에 맞춰 세로 스크롤, 가로형(발표 슬라이드)은 한 페이지 전체 표시 */
+  function renderPdfPage(num, keepAnchor){
     if (!pdfState.doc) return;
     var token = pdfState.token;
+    var seq = ++pdfState.seq;
+    var stage = el('pdfStage');
+    var anchor = null;
+    if (keepAnchor && stage.scrollHeight > 0){
+      anchor = {
+        x: (stage.scrollLeft + stage.clientWidth / 2) / Math.max(1, stage.scrollWidth),
+        y: (stage.scrollTop + stage.clientHeight / 2) / Math.max(1, stage.scrollHeight)
+      };
+    }
+
     pdfState.doc.getPage(num).then(function(page){
-      if (token !== pdfState.token) return;
-      var stage = el('pdfStage');
-      var avail = Math.max(320, stage.clientWidth - 40);
+      if (token !== pdfState.token || seq !== pdfState.seq) return;
       var base = page.getViewport({ scale: 1 });
-      var scale = avail / base.width;
+      if (pdfState.fit === 'auto'){
+        pdfState.fit = (base.height > base.width * 1.15) ? 'width' : 'page';
+      }
+
+      var availW = Math.max(260, stage.clientWidth - 34);
+      var availH = Math.max(260, stage.clientHeight - 34);
+      var fitScale = (pdfState.fit === 'width')
+        ? availW / base.width
+        : Math.min(availW / base.width, availH / base.height);
+      var scale = fitScale * pdfState.zoom;
+
       var ratio = Math.min(window.devicePixelRatio || 1, 2);
       var viewport = page.getViewport({ scale: scale * ratio });
+      var maxPixels = 20e6;
+      var area = viewport.width * viewport.height;
+      if (area > maxPixels){
+        ratio = Math.max(1, ratio * Math.sqrt(maxPixels / area));
+        viewport = page.getViewport({ scale: scale * ratio });
+      }
+
+      cancelRender();
       var canvas = el('pdfCanvas');
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       canvas.style.width = (viewport.width / ratio) + 'px';
       canvas.style.height = (viewport.height / ratio) + 'px';
       setStage('ready');
-      page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise.then(function(){
-        if (token !== pdfState.token) return;
+
+      var task = page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport });
+      pdfState.task = task;
+      task.promise.then(function(){
+        if (token !== pdfState.token || seq !== pdfState.seq) return;
+        pdfState.task = null;
         pdfState.page = num;
-        el('pdfPageIndicator').textContent = num + ' / ' + pdfState.total;
-        el('pdfPrevBtn').disabled = (num <= 1);
-        el('pdfNextBtn').disabled = (num >= pdfState.total);
-      });
+        updatePdfControls();
+        if (anchor){
+          stage.scrollLeft = anchor.x * stage.scrollWidth - stage.clientWidth / 2;
+          stage.scrollTop  = anchor.y * stage.scrollHeight - stage.clientHeight / 2;
+        } else {
+          stage.scrollTop = 0;
+          stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
+        }
+      }).catch(function(){});
     });
+  }
+
+  function updatePdfControls(){
+    var stage = el('pdfStage');
+    el('pdfPageIndicator').textContent = pdfState.page + ' / ' + pdfState.total;
+    el('pdfPrevBtn').disabled = (pdfState.page <= 1);
+    el('pdfNextBtn').disabled = (pdfState.page >= pdfState.total);
+    el('zoomLevel').textContent = Math.round(pdfState.zoom * 100) + '%';
+    el('zoomOutBtn').disabled = (pdfState.zoom <= ZOOM_MIN + 0.001);
+    el('zoomInBtn').disabled = (pdfState.zoom >= ZOOM_MAX - 0.001);
+    var fitBtn = el('fitBtn');
+    fitBtn.textContent = (pdfState.fit === 'width') ? '가로 맞춤' : '전체 맞춤';
+    fitBtn.classList.toggle('width', pdfState.fit === 'width');
+    stage.classList.toggle('can-page', stage.scrollHeight <= stage.clientHeight + 2);
+  }
+
+  function pdfZoom(dir){
+    if (!pdfState.doc) return;
+    var z = Math.round((pdfState.zoom + dir * ZOOM_STEP) * 100) / 100;
+    z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    if (z === pdfState.zoom) return;
+    pdfState.zoom = z;
+    el('zoomLevel').textContent = Math.round(z * 100) + '%';
+    renderPdfPage(pdfState.page, true);
+  }
+
+  function pdfZoomReset(){
+    if (!pdfState.doc || pdfState.zoom === 1) return;
+    pdfState.zoom = 1;
+    renderPdfPage(pdfState.page, false);
+  }
+
+  function pdfToggleFit(){
+    if (!pdfState.doc) return;
+    pdfState.fit = (pdfState.fit === 'width') ? 'page' : 'width';
+    pdfState.zoom = 1;
+    renderPdfPage(pdfState.page, false);
+  }
+
+  function toggleDocWide(){
+    var wide = el('modalBodyEl').classList.toggle('wide');
+    var btn = el('docWideBtn');
+    var label = wide ? '상세 내용 다시 보기' : '자료 넓게 보기';
+    btn.title = label;
+    btn.setAttribute('aria-label', label);
+    if (pdfState.doc) setTimeout(function(){ renderPdfPage(pdfState.page, false); }, 40);
   }
 
   function pdfPrevPage(){ if (pdfState.doc && pdfState.page > 1) renderPdfPage(pdfState.page - 1); }
@@ -1438,26 +1620,42 @@
   function closeProject(){
     el('modalOverlay').classList.remove('open');
     document.body.style.overflow = '';
-    pdfState = { doc:null, page:1, total:0, token:pdfState.token + 1 };
+    cancelRender();
+    pdfState = { doc:null, page:1, total:0, token:pdfState.token + 1, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
   }
 
   el('pdfCanvas').addEventListener('click', function(e){
+    var stage = el('pdfStage');
+    if (stage.scrollHeight > stage.clientHeight + 2) return; /* 확대/세로 스크롤 중에는 페이지 이동 안 함 */
     var rect = this.getBoundingClientRect();
     if (e.clientX - rect.left > rect.width / 2) pdfNextPage(); else pdfPrevPage();
   });
+
+  /* Ctrl(⌘) + 휠로 확대·축소 */
+  el('pdfStage').addEventListener('wheel', function(e){
+    if (!pdfState.doc || !(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    var now = Date.now();
+    if (now - pdfState.wheelAt < 130) return;
+    pdfState.wheelAt = now;
+    pdfZoom(e.deltaY < 0 ? 1 : -1);
+  }, { passive:false });
 
   document.addEventListener('keydown', function(e){
     if (!el('modalOverlay').classList.contains('open')) return;
     if (e.key === 'Escape') closeProject();
     if (e.key === 'ArrowRight') pdfNextPage();
     if (e.key === 'ArrowLeft') pdfPrevPage();
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); pdfZoom(1); }
+    if (e.key === '-' || e.key === '_') { e.preventDefault(); pdfZoom(-1); }
+    if (e.key === '0') pdfZoomReset();
   });
 
   var resizeTimer;
   window.addEventListener('resize', function(){
     if (!pdfState.doc) return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function(){ renderPdfPage(pdfState.page); }, 180);
+    resizeTimer = setTimeout(function(){ renderPdfPage(pdfState.page, false); }, 180);
   });
 
   /* ---------- 테마 전환 ---------- */
