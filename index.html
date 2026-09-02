@@ -1265,7 +1265,7 @@
     <div class="footer__inner">
       <div>
         <h2>연락처</h2>
-        <p class="lede">논문 안에서 끝나는 모델이 아니라, 사용자의 손끝에서 동작하는 AI를 만듭니다. 데이터로 문제를 정확히 정의하고 생성형 AI로 답을 구현해, 연구와 서비스 사이의 거리를 좁히는 엔지니어가 되겠습니다.</p>
+        <p class="lede">사용자의 손끝에서 동작하는 AI를 만드는 AI 연구원입니다. 데이터로 문제를 정확히 정의하고 생성형 AI로 답을 구현해, 연구와 서비스 사이의 거리를 좁히는 엔지니어가 되겠습니다.</p>
       </div>
       <div class="contact-links">
         <a href="mailto:gkwogns95@gmail.com"><svg class="mat-icon"><use href="#icon-mail"></use></svg>gkwogns95@gmail.com</a>
@@ -2154,9 +2154,14 @@
 
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
   <defs>
+    <!-- Dual Arc: 서로를 감싸는 두 개의 호 + 마침점. 180° 회전 대칭 모노라인 마크 -->
     <symbol id="chatSparkIcon" viewBox="0 0 24 24">
-      <path d="M10 2 C10.8 6.2 13.8 9.2 18 10 C13.8 10.8 10.8 13.8 10 18 C9.2 13.8 6.2 10.8 2 10 C6.2 9.2 9.2 6.2 10 2 Z"></path>
-      <path d="M19 15.5 C19.2 16.8 19.8 17.4 21 17.6 C19.8 17.8 19.2 18.4 19 19.7 C18.8 18.4 18.2 17.8 17 17.6 C18.2 17.4 18.8 16.8 19 15.5 Z"></path>
+      <g fill="none" stroke="currentColor" stroke-width="2.7" stroke-linecap="round">
+        <path d="M4.30 15.37A9 9 0 0 1 14.97 4.70"></path>
+        <path d="M19.70 8.63A9 9 0 0 1 9.03 19.30"></path>
+      </g>
+      <circle cx="18.49" cy="5.45" r="1.9" fill="currentColor" stroke="none"></circle>
+      <circle cx="5.51" cy="18.55" r="1.9" fill="currentColor" stroke="none"></circle>
     </symbol>
   </defs>
 </svg>
@@ -2178,7 +2183,7 @@
       <span class="chat-head__status"></span>
     </div>
     <div class="chat-head__txt">
-      <h3 class="chat-head__title" id="chatTitle">하재훈 AI 어시스턴트</h3>
+      <h3 class="chat-head__title" id="chatTitle">포트폴리오 어시스턴트</h3>
       <p class="chat-head__sub">이력·프로젝트에 대해 물어보세요</p>
     </div>
     <button class="chat-head__btn" onclick="chatReset()" title="대화 새로 시작" aria-label="대화 새로 시작">
@@ -2202,7 +2207,7 @@
   <div class="chat-foot">
     <div class="chat-form">
       <textarea class="chat-input" id="chatInput" rows="1" maxlength="500"
-                placeholder="어떤 프로젝트를 했는지 물어보세요" aria-label="메시지 입력"></textarea>
+                placeholder="궁금하신점 편하게 물어보세요" aria-label="메시지 입력"></textarea>
       <button class="chat-send" id="chatSend" onclick="chatSend()" aria-label="보내기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2222,11 +2227,11 @@
      ========================================================== */
   var CHAT_ENDPOINT = 'https://portfolio-chat.gkwogns95.workers.dev/';
 
-  var WELCOME = '안녕하세요! 하재훈님의 포트폴리오 AI 어시스턴트예요.\n이력, 연구, 프로젝트에 대해 편하게 물어봐 주세요.';
+  var WELCOME = '안녕하세요! 포트폴리오 어시스턴트입니다.\n궁금하신점 편하게 물어봐 주세요.';
   var CHIPS = [
     '어떤 일을 해오셨나요?',
     '가장 대표적인 프로젝트는?',
-    '딥보이스 탐지 연구가 궁금해요',
+    '졸업 논문이 궁금해요',
     '연락처 알려주세요'
   ];
   var STORE_KEY = 'ha-chat-v1';
