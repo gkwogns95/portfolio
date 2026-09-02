@@ -1825,5 +1825,551 @@
   })();
 </script>
 
+<!-- ============================================================
+     포트폴리오 챗봇 위젯
+     - API 키는 여기 들어가지 않습니다. CHAT_ENDPOINT(Cloudflare Worker)만 호출합니다.
+     ============================================================ -->
+<style>
+  :root{
+    --chat-accent:var(--research);
+    --chat-accent-dim:var(--research-dim);
+    --chat-accent-line:var(--research-line);
+    --chat-bubble-bot:var(--panel-hi);
+    --chat-shadow:0 10px 40px -12px rgba(15,23,42,0.28), 0 2px 8px rgba(15,23,42,0.08);
+  }
+  :root[data-theme="dark"]{
+    --chat-shadow:0 14px 48px -12px rgba(0,0,0,0.65), 0 2px 10px rgba(0,0,0,0.4);
+  }
+
+  /* ---------- 런처 버튼 ---------- */
+  .chat-fab{
+    position:fixed; right:24px; bottom:24px; z-index:50;
+    width:56px; height:56px; border-radius:50%;
+    display:grid; place-items:center;
+    background:var(--chat-accent); color:#fff;
+    border:none; cursor:pointer;
+    box-shadow:0 6px 20px -4px rgba(74,91,212,0.45), 0 2px 6px rgba(15,23,42,0.18);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  :root[data-theme="dark"] .chat-fab{
+    color:#0D111C;
+    box-shadow:0 6px 22px -4px rgba(147,162,255,0.4), 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .chat-fab:hover{ transform:translateY(-2px) scale(1.04); }
+  .chat-fab:active{ transform:translateY(0) scale(0.97); }
+  .chat-fab:focus-visible{ outline:2px solid var(--chat-accent); outline-offset:3px; }
+  .chat-fab svg{ width:26px; height:26px; transition:opacity .16s ease, transform .16s ease; }
+  .chat-fab .i-close{ position:absolute; opacity:0; transform:rotate(-45deg) scale(.7); }
+  .chat-fab[aria-expanded="true"] .i-chat{ opacity:0; transform:scale(.7); }
+  .chat-fab[aria-expanded="true"] .i-close{ opacity:1; transform:rotate(0) scale(1); }
+
+  /* 최초 방문 시 한 번만 튀는 알림 점 */
+  .chat-fab__ping{
+    position:absolute; top:2px; right:2px;
+    width:11px; height:11px; border-radius:50%;
+    background:var(--applied); border:2px solid var(--bg);
+  }
+  .chat-fab__ping::after{
+    content:""; position:absolute; inset:-2px; border-radius:50%;
+    background:var(--applied); opacity:.55;
+    animation:chatPing 2.4s ease-out 3;
+  }
+  @keyframes chatPing{
+    0%{ transform:scale(1); opacity:.55; }
+    70%,100%{ transform:scale(2.4); opacity:0; }
+  }
+
+  /* ---------- 패널 ---------- */
+  .chat-panel{
+    padding:0; margin:0;
+    position:fixed; right:24px; bottom:92px; z-index:50;
+    width:384px; max-width:calc(100vw - 32px);
+    height:min(580px, calc(100vh - 140px));
+    display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--r-lg); box-shadow:var(--chat-shadow);
+    overflow:hidden;
+    opacity:0; visibility:hidden; transform:translateY(10px) scale(.985);
+    transform-origin:bottom right;
+    transition:opacity .18s ease, transform .18s ease, visibility .18s;
+  }
+  .chat-panel.open{ opacity:1; visibility:visible; transform:none; }
+
+  .chat-head{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 14px 14px 16px;
+    border-bottom:1px solid var(--line-soft);
+    background:var(--panel-hi);
+  }
+  .chat-head__avatar{
+    width:32px; height:32px; border-radius:9px; flex:0 0 auto;
+    display:grid; place-items:center;
+    background:var(--chat-accent-dim); border:1px solid var(--chat-accent-line);
+    color:var(--chat-accent);
+    font:600 13px/1 var(--mono); letter-spacing:.02em;
+  }
+  .chat-head__txt{ flex:1 1 auto; min-width:0; }
+  .chat-head__title{ margin:0; font:600 14px/1.3 var(--sans); color:var(--fg); }
+  .chat-head__sub{
+    margin:2px 0 0; font:400 11.5px/1.3 var(--sans); color:var(--fg-3);
+    display:flex; align-items:center; gap:5px;
+  }
+  .chat-head__dot{
+    width:6px; height:6px; border-radius:50%; background:var(--applied); flex:0 0 auto;
+  }
+  .chat-head__btn{
+    width:30px; height:30px; flex:0 0 auto; border-radius:var(--r-sm);
+    display:grid; place-items:center;
+    background:transparent; border:1px solid transparent; color:var(--fg-3);
+    cursor:pointer; transition:background .15s ease, color .15s ease;
+  }
+  .chat-head__btn:hover{ background:var(--bg); color:var(--fg); }
+  .chat-head__btn:focus-visible{ outline:2px solid var(--chat-accent); outline-offset:1px; }
+  .chat-head__btn svg{ width:16px; height:16px; }
+
+  /* ---------- 메시지 영역 ---------- */
+  .chat-body{
+    flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain;
+    padding:18px 16px 8px;
+    display:flex; flex-direction:column; gap:12px;
+    scrollbar-width:thin; scrollbar-color:var(--line) transparent;
+  }
+  .chat-body::-webkit-scrollbar{ width:8px; }
+  .chat-body::-webkit-scrollbar-thumb{ background:var(--line); border-radius:99px; border:2px solid var(--panel); }
+  .chat-body::-webkit-scrollbar-track{ background:transparent; }
+
+  .chat-msg{ max-width:86%; font:400 13.5px/1.65 var(--sans); word-break:break-word; }
+  .chat-msg.bot{
+    align-self:flex-start;
+    background:var(--chat-bubble-bot); border:1px solid var(--line-soft);
+    color:var(--fg-2);
+    padding:10px 13px; border-radius:4px 13px 13px 13px;
+  }
+  .chat-msg.user{
+    align-self:flex-end;
+    background:var(--chat-accent); color:#fff;
+    padding:10px 13px; border-radius:13px 4px 13px 13px;
+  }
+  :root[data-theme="dark"] .chat-msg.user{ color:#0D111C; font-weight:500; }
+  .chat-msg.error{
+    align-self:stretch; max-width:100%; text-align:center;
+    background:transparent; border:none; padding:2px 0;
+    color:var(--fg-3); font-size:12.5px;
+  }
+  .chat-msg strong{ font-weight:600; color:var(--fg); }
+  :root[data-theme="dark"] .chat-msg.user strong{ color:inherit; }
+  .chat-msg ul{ margin:6px 0 0; padding-left:17px; }
+  .chat-msg li{ margin:3px 0; }
+  .chat-msg p{ margin:0 0 7px; }
+  .chat-msg p:last-child{ margin-bottom:0; }
+  .chat-msg a{ color:var(--chat-accent); text-decoration:underline; text-underline-offset:2px; }
+  .chat-msg.user a{ color:inherit; }
+
+  /* 타이핑 인디케이터 */
+  .chat-typing{ display:flex; gap:4px; align-items:center; padding:3px 1px; }
+  .chat-typing i{
+    width:6px; height:6px; border-radius:50%; background:var(--fg-3);
+    animation:chatDot 1.3s ease-in-out infinite;
+  }
+  .chat-typing i:nth-child(2){ animation-delay:.18s; }
+  .chat-typing i:nth-child(3){ animation-delay:.36s; }
+  @keyframes chatDot{
+    0%,60%,100%{ transform:translateY(0); opacity:.35; }
+    30%{ transform:translateY(-4px); opacity:1; }
+  }
+
+  /* 추천 질문 칩 */
+  .chat-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .chat-chip{
+    font:400 12.5px/1 var(--sans); color:var(--chat-accent);
+    background:var(--chat-accent-dim); border:1px solid var(--chat-accent-line);
+    padding:7px 11px; border-radius:99px; cursor:pointer;
+    transition:background .15s ease, transform .12s ease;
+  }
+  .chat-chip:hover{ background:var(--panel-hi); transform:translateY(-1px); }
+  .chat-chip:focus-visible{ outline:2px solid var(--chat-accent); outline-offset:2px; }
+
+  /* ---------- 입력 ---------- */
+  .chat-foot{
+    flex:0 0 auto; padding:10px 12px 12px;
+    border-top:1px solid var(--line-soft); background:var(--panel);
+  }
+  .chat-form{
+    display:flex; align-items:flex-end; gap:8px;
+    background:var(--bg); border:1px solid var(--line);
+    border-radius:var(--r-md); padding:6px 6px 6px 12px;
+    transition:border-color .15s ease;
+  }
+  .chat-form:focus-within{ border-color:var(--chat-accent-line); }
+  .chat-input{
+    flex:1 1 auto; border:none; background:transparent; resize:none;
+    font:400 13.5px/1.5 var(--sans); color:var(--fg);
+    max-height:96px; padding:6px 0; outline:none;
+  }
+  .chat-input::placeholder{ color:var(--fg-3); }
+  .chat-send{
+    flex:0 0 auto; width:32px; height:32px; border-radius:8px;
+    display:grid; place-items:center; border:none; cursor:pointer;
+    background:var(--chat-accent); color:#fff;
+    transition:opacity .15s ease, transform .12s ease;
+  }
+  :root[data-theme="dark"] .chat-send{ color:#0D111C; }
+  .chat-send:disabled{ opacity:.35; cursor:not-allowed; }
+  .chat-send:not(:disabled):hover{ transform:scale(1.06); }
+  .chat-send:focus-visible{ outline:2px solid var(--chat-accent); outline-offset:2px; }
+  .chat-send svg{ width:16px; height:16px; }
+  .chat-note{
+    margin:8px 2px 0; font:400 10.5px/1.4 var(--sans); color:var(--fg-3); text-align:center;
+  }
+
+  /* ---------- 모바일 ---------- */
+  @media (max-width:520px){
+    .chat-fab{ right:16px; bottom:16px; width:52px; height:52px; }
+    .chat-panel{
+      right:0; left:0; bottom:0; width:auto; max-width:none;
+      height:min(86vh, 640px);
+      border-radius:var(--r-lg) var(--r-lg) 0 0;
+      border-left:none; border-right:none; border-bottom:none;
+      transform-origin:bottom center; transform:translateY(16px);
+    }
+    .chat-panel.open{ transform:none; }
+    .chat-msg{ max-width:90%; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .chat-fab, .chat-panel, .chat-chip, .chat-send{ transition:none; }
+    .chat-typing i, .chat-fab__ping::after{ animation:none; }
+    .chat-fab__ping::after{ display:none; }
+  }
+</style>
+
+<button class="chat-fab" id="chatFab" onclick="chatToggle()" aria-expanded="false"
+        aria-controls="chatPanel" aria-label="하재훈 AI 어시스턴트 열기">
+  <svg class="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20.5 11.6c0 4-3.8 7.2-8.5 7.2-.9 0-1.8-.1-2.6-.34L4.2 20.2l1.3-3.4C4.2 15.4 3.5 13.6 3.5 11.6c0-4 3.8-7.2 8.5-7.2s8.5 3.2 8.5 7.2z"></path>
+    <circle cx="8.6" cy="11.6" r="1.05" fill="currentColor" stroke="none"></circle>
+    <circle cx="12" cy="11.6" r="1.05" fill="currentColor" stroke="none"></circle>
+    <circle cx="15.4" cy="11.6" r="1.05" fill="currentColor" stroke="none"></circle>
+  </svg>
+  <svg class="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1"
+       stroke-linecap="round" aria-hidden="true">
+    <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"></line>
+    <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"></line>
+  </svg>
+  <span class="chat-fab__ping" id="chatPing" hidden></span>
+</button>
+
+<div class="chat-panel" id="chatPanel" role="dialog" aria-modal="false" aria-labelledby="chatTitle">
+  <header class="chat-head">
+    <div class="chat-head__avatar" aria-hidden="true">HA</div>
+    <div class="chat-head__txt">
+      <h3 class="chat-head__title" id="chatTitle">하재훈 AI 어시스턴트</h3>
+      <p class="chat-head__sub"><span class="chat-head__dot"></span>이력·프로젝트에 대해 물어보세요</p>
+    </div>
+    <button class="chat-head__btn" onclick="chatReset()" title="대화 새로 시작" aria-label="대화 새로 시작">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 11a8 8 0 1 0-2.3 6.1"></path>
+        <polyline points="20 4.5 20 11 13.6 11"></polyline>
+      </svg>
+    </button>
+    <button class="chat-head__btn" onclick="chatToggle()" title="닫기" aria-label="닫기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
+        <line x1="6.5" y1="6.5" x2="17.5" y2="17.5"></line>
+        <line x1="17.5" y1="6.5" x2="6.5" y2="17.5"></line>
+      </svg>
+    </button>
+  </header>
+
+  <div class="chat-body" id="chatBody" aria-live="polite" aria-atomic="false"></div>
+
+  <div class="chat-foot">
+    <div class="chat-form">
+      <textarea class="chat-input" id="chatInput" rows="1" maxlength="500"
+                placeholder="어떤 프로젝트를 했는지 물어보세요" aria-label="메시지 입력"></textarea>
+      <button class="chat-send" id="chatSend" onclick="chatSend()" aria-label="보내기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4.5 12h13"></path>
+          <polyline points="12.5 6.5 18.5 12 12.5 17.5"></polyline>
+        </svg>
+      </button>
+    </div>
+    <p class="chat-note">AI가 생성한 답변이라 부정확할 수 있습니다.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ==========================================================
+     설정 — 배포한 Cloudflare Worker 주소로 바꾸세요
+     ========================================================== */
+  var CHAT_ENDPOINT = 'https://portfolio-chat.gkwogns95.workers.dev/';
+
+  var WELCOME = '안녕하세요! 하재훈님의 포트폴리오 AI 어시스턴트예요.\n이력, 연구, 프로젝트에 대해 편하게 물어봐 주세요.';
+  var CHIPS = [
+    '어떤 일을 해오셨나요?',
+    '가장 대표적인 프로젝트는?',
+    '딥보이스 탐지 연구가 궁금해요',
+    '연락처 알려주세요'
+  ];
+  var STORE_KEY = 'ha-chat-v1';
+
+  var state = { open:false, busy:false, prevId:null, msgs:[] };
+  var bodyEl, inputEl, sendEl, fabEl, panelEl;
+
+  /* ---------- 유틸 ---------- */
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  /* 안전한 최소 마크다운: **굵게**, 줄바꿈, - 목록, 링크 자동 변환 */
+  function render(text){
+    var lines = esc(text).split('\n');
+    var html = '', list = [];
+    function flush(){
+      if (list.length){ html += '<ul>' + list.join('') + '</ul>'; list = []; }
+    }
+    lines.forEach(function(line){
+      var t = line.trim();
+      if (!t){ flush(); return; }
+      if (/^[-•*]\s+/.test(t)){ list.push('<li>' + t.replace(/^[-•*]\s+/,'') + '</li>'); return; }
+      flush();
+      html += '<p>' + t + '</p>';
+    });
+    flush();
+    return html
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(https?:\/\/[^\s<)]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
+      .replace(/([\w.+-]+@[\w-]+\.[\w.]+)/g, '<a href="mailto:$1">$1</a>');
+  }
+
+  function scroll(){ bodyEl.scrollTop = bodyEl.scrollHeight; }
+
+  function addMsg(role, text){
+    var d = document.createElement('div');
+    d.className = 'chat-msg ' + role;
+    d.innerHTML = role === 'user' ? esc(text).replace(/\n/g,'<br>') : render(text);
+    bodyEl.appendChild(d);
+    scroll();
+    return d;
+  }
+
+  function addTyping(){
+    var d = document.createElement('div');
+    d.className = 'chat-msg bot';
+    d.innerHTML = '<span class="chat-typing"><i></i><i></i><i></i></span>';
+    bodyEl.appendChild(d);
+    scroll();
+    return d;
+  }
+
+  function addChips(){
+    var wrap = document.createElement('div');
+    wrap.className = 'chat-chips';
+    CHIPS.forEach(function(q){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chat-chip';
+      b.textContent = q;
+      b.onclick = function(){ wrap.remove(); send(q); };
+      wrap.appendChild(b);
+    });
+    bodyEl.appendChild(wrap);
+    scroll();
+  }
+
+  /* ---------- 세션 저장 ---------- */
+  function save(){
+    try{
+      sessionStorage.setItem(STORE_KEY, JSON.stringify({ prevId:state.prevId, msgs:state.msgs }));
+    }catch(e){}
+  }
+  function load(){
+    try{
+      var raw = sessionStorage.getItem(STORE_KEY);
+      if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || !Array.isArray(d.msgs) || !d.msgs.length) return false;
+      state.prevId = d.prevId || null;
+      state.msgs = d.msgs;
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function paintWelcome(){
+    bodyEl.innerHTML = '';
+    addMsg('bot', WELCOME);
+    addChips();
+  }
+
+  /* ---------- 전송 ---------- */
+  function send(text){
+    if (state.busy) return;
+    text = (text || '').trim();
+    if (!text) return;
+
+    var chips = bodyEl.querySelector('.chat-chips');
+    if (chips) chips.remove();
+
+    state.busy = true;
+    sendEl.disabled = true;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    addMsg('user', text);
+    state.msgs.push({ role:'user', text:text });
+    var typing = addTyping();
+
+    var payload = { message:text };
+    if (state.prevId) payload.previous_response_id = state.prevId;
+
+    fetch(CHAT_ENDPOINT, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify(payload)
+    }).then(function(res){
+      if (!res.ok || !res.body){
+        return res.json().catch(function(){ return {}; }).then(function(d){
+          if (d && d.reset){ state.prevId = null; }
+          throw new Error(d && d.error ? d.error : '답변을 불러오지 못했습니다.');
+        });
+      }
+      return stream(res, typing);
+    }).catch(function(err){
+      if (typing.parentNode) typing.remove();
+      addMsg('error', err.message || '연결에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    }).then(function(){
+      state.busy = false;
+      sendEl.disabled = false;
+      save();
+      if (state.open) inputEl.focus();
+    });
+  }
+
+  /* ---------- SSE 스트림 처리 ---------- */
+  function stream(res, typing){
+    var reader = res.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '', answer = '', bubble = null;
+
+    function paint(){
+      if (!bubble){
+        typing.innerHTML = '';
+        bubble = typing;
+      }
+      bubble.innerHTML = render(answer);
+      scroll();
+    }
+
+    function pump(){
+      return reader.read().then(function(r){
+        if (r.done){
+          if (!answer){
+            if (typing.parentNode) typing.remove();
+            addMsg('error', '답변이 비어 있습니다. 다시 시도해 주세요.');
+          } else {
+            state.msgs.push({ role:'bot', text:answer });
+          }
+          return;
+        }
+        buf += decoder.decode(r.value, { stream:true });
+        var parts = buf.split('\n\n');
+        buf = parts.pop();
+
+        parts.forEach(function(block){
+          block.split('\n').forEach(function(line){
+            if (line.indexOf('data:') !== 0) return;
+            var raw = line.slice(5).trim();
+            if (!raw || raw === '[DONE]') return;
+            var ev;
+            try{ ev = JSON.parse(raw); }catch(e){ return; }
+
+            if (ev.type === 'response.created' && ev.response && ev.response.id){
+              state.prevId = ev.response.id;
+            } else if (ev.type === 'response.output_text.delta' && typeof ev.delta === 'string'){
+              answer += ev.delta;
+              paint();
+            } else if (ev.type === 'response.completed' && !answer && ev.response){
+              // 델타를 못 받은 경우의 안전망
+              var out = (ev.response.output || []).find(function(o){ return o.type === 'message'; });
+              var c = out && (out.content || []).find(function(x){ return x.type === 'output_text'; });
+              if (c && c.text){ answer = c.text; paint(); }
+            }
+          });
+        });
+        return pump();
+      });
+    }
+    return pump();
+  }
+
+  /* ---------- 컨트롤 ---------- */
+  window.chatToggle = function(){
+    state.open = !state.open;
+    panelEl.classList.toggle('open', state.open);
+    fabEl.setAttribute('aria-expanded', String(state.open));
+    fabEl.setAttribute('aria-label', state.open ? '하재훈 AI 어시스턴트 닫기' : '하재훈 AI 어시스턴트 열기');
+    var ping = document.getElementById('chatPing');
+    if (ping) ping.hidden = true;
+    try{ localStorage.setItem('ha-chat-seen', '1'); }catch(e){}
+    if (state.open){
+      if (!bodyEl.children.length) paintWelcome();
+      setTimeout(function(){ inputEl.focus(); scroll(); }, 180);
+    }
+  };
+
+  window.chatReset = function(){
+    state.prevId = null;
+    state.msgs = [];
+    state.busy = false;
+    sendEl.disabled = false;
+    try{ sessionStorage.removeItem(STORE_KEY); }catch(e){}
+    paintWelcome();
+    inputEl.focus();
+  };
+
+  window.chatSend = function(){ send(inputEl.value); };
+
+  /* ---------- 초기화 ---------- */
+  document.addEventListener('DOMContentLoaded', function(){
+    bodyEl  = document.getElementById('chatBody');
+    inputEl = document.getElementById('chatInput');
+    sendEl  = document.getElementById('chatSend');
+    fabEl   = document.getElementById('chatFab');
+    panelEl = document.getElementById('chatPanel');
+
+    if (load()){
+      bodyEl.innerHTML = '';
+      state.msgs.forEach(function(m){ addMsg(m.role, m.text); });
+    }
+
+    try{
+      if (!localStorage.getItem('ha-chat-seen')){
+        document.getElementById('chatPing').hidden = false;
+      }
+    }catch(e){}
+
+    inputEl.addEventListener('input', function(){
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 96) + 'px';
+    });
+    inputEl.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){
+        e.preventDefault();
+        send(this.value);
+      }
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && state.open){ window.chatToggle(); fabEl.focus(); }
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
