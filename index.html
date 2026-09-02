@@ -502,6 +502,34 @@
   .modal-body.solo .pane--detail{ padding:30px 32px 48px; }
   .modal-body.solo .pane--doc{ width:100%; max-width:1180px; margin:0 auto; }
 
+  /* ---- 자료(PDF) 없이 상세 설명만 있는 프로젝트 ---- */
+  @media (min-width:821px){
+    .modal-box.detail-only{ max-width:960px; }
+    .modal-box.detail-only .modal-head{ padding:30px 62px 24px 52px; }
+    .modal-box.detail-only .pane--detail{ padding:40px 52px 56px; }
+  }
+  @media (min-width:1024px){
+    .modal-box.detail-only .pane--detail{
+      display:grid; align-content:start;
+      grid-template-columns:186px minmax(0,1fr); column-gap:44px;
+    }
+    .modal-box.detail-only .metric-strip{
+      grid-column:1; grid-row:1; align-self:start;
+      position:sticky; top:16px;
+      flex-direction:column; gap:26px;
+      margin:0; padding:2px 0 0; border-bottom:none;
+    }
+    .modal-box.detail-only .metric-strip .v{ font-size:30px; }
+    .modal-box.detail-only .steps{
+      grid-column:2; grid-row:1;
+      border-left:1px solid var(--line-soft); padding-left:44px;
+    }
+    .modal-box.detail-only.no-metrics .pane--detail{ grid-template-columns:minmax(0,1fr); }
+    .modal-box.detail-only.no-metrics .steps{
+      grid-column:1; border-left:none; padding-left:0;
+    }
+  }
+
   .doc-bar{
     display:flex; align-items:center; justify-content:flex-end;
     gap:12px; margin-bottom:12px; flex-shrink:0;
@@ -1498,9 +1526,12 @@
 
     el('paneDoc').style.display = hasDocs ? '' : 'none';
     el('paneDetail').style.display = hasDetail ? '' : 'none';
+    var detailOnly = !hasDocs && hasDetail;
     el('modalBodyEl').classList.toggle('solo', !hasDocs || !hasDetail);
     el('modalBodyEl').classList.remove('wide');
     el('modalBox').classList.toggle('has-doc', hasDocs);
+    box.classList.toggle('detail-only', detailOnly);
+    box.classList.toggle('no-metrics', detailOnly && !(p.metrics && p.metrics.length));
     el('docWideBtn').style.display = (hasDocs && hasDetail) ? '' : 'none';
 
     if (hasDetail) renderDetail(p);
