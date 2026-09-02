@@ -1967,6 +1967,11 @@
 
   /* 타이핑 인디케이터 */
   .chat-typing{ display:flex; gap:4px; align-items:center; padding:3px 1px; }
+  .chat-status{
+    display:flex; align-items:center; gap:7px; padding:1px;
+    font:400 12.5px/1.5 var(--sans); color:var(--fg-3);
+  }
+  .chat-status .chat-typing{ padding:0; }
   .chat-typing i{
     width:6px; height:6px; border-radius:50%; background:var(--fg-3);
     animation:chatDot 1.3s ease-in-out infinite;
@@ -2106,7 +2111,7 @@
   /* ==========================================================
      설정 — 배포한 Cloudflare Worker 주소로 바꾸세요
      ========================================================== */
-  var CHAT_ENDPOINT = 'https://portfolio-chat.gkwogns95.workers.dev/';
+  var CHAT_ENDPOINT = 'https://portfolio-chat.YOUR-SUBDOMAIN.workers.dev';
 
   var WELCOME = '안녕하세요! 하재훈님의 포트폴리오 AI 어시스턴트예요.\n이력, 연구, 프로젝트에 대해 편하게 물어봐 주세요.';
   var CHIPS = [
@@ -2162,10 +2167,18 @@
   function addTyping(){
     var d = document.createElement('div');
     d.className = 'chat-msg bot';
-    d.innerHTML = '<span class="chat-typing"><i></i><i></i><i></i></span>';
+    d.innerHTML = '<span class="chat-status">' +
+                  '<span class="chat-typing"><i></i><i></i><i></i></span>' +
+                  '<span class="chat-status__txt"></span></span>';
     bodyEl.appendChild(d);
     scroll();
     return d;
+  }
+
+  function setStatus(node, text){
+    var t = node.querySelector('.chat-status__txt');
+    if (t) t.textContent = text;
+    scroll();
   }
 
   function addChips(){
@@ -2291,6 +2304,8 @@
 
             if (ev.type === 'response.created' && ev.response && ev.response.id){
               state.prevId = ev.response.id;
+            } else if (ev.type && ev.type.indexOf('response.file_search_call') === 0){
+              setStatus(typing, ev.type.indexOf('completed') > -1 ? '답변 작성 중' : '포트폴리오 자료 찾는 중');
             } else if (ev.type === 'response.output_text.delta' && typeof ev.delta === 'string'){
               answer += ev.delta;
               paint();
