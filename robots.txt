@@ -1,8 +1,49 @@
-# gkwogns95.github.io/portfolio/ 는 프로젝트 페이지라 크롤러가 이 파일을 읽지 않습니다.
-# (robots.txt는 도메인 루트에서만 읽힙니다.)
-# 사이트맵은 구글 서치 콘솔에 직접 제출하세요.
-# 나중에 개인 도메인을 연결하면 이 파일이 그때부터 정상 동작합니다.
+
 User-agent: *
 Allow: /
 
 Sitemap: https://gkwogns95.github.io/portfolio/sitemap.xml
+
+# Naver (Yeti)
+User-agent: Yeti
+Allow: /
+
+# Answer / generative engines (GEO) — allow crawl of landing + llms.txt
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
