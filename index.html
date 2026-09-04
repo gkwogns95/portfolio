@@ -696,6 +696,8 @@
     border-radius:3px; box-shadow:var(--canvas-shadow);
   }
   .pdf-stage.can-page canvas{ cursor:pointer; }
+  /* 가로 스크롤이 필요 없을 때는 좌우 제스처를 뷰어가 가져갑니다(세로 스크롤·핀치줌은 그대로) */
+  .pdf-stage.swipe-x{ touch-action:pan-y; touch-action:pan-y pinch-zoom; }
   .pdf-status{
     margin:auto; padding:0 28px; text-align:center;
     font-size:13.5px; color:var(--fg-3); line-height:1.7; max-width:44ch;
@@ -1904,6 +1906,8 @@
 
       cancelRender();
       var canvas = el('pdfCanvas');
+      canvas.style.transition = '';
+      canvas.style.transform = '';
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       canvas.style.width = (viewport.width / ratio) + 'px';
@@ -1940,6 +1944,7 @@
     fitBtn.textContent = (pdfState.fit === 'width') ? '가로 맞춤' : '전체 맞춤';
     fitBtn.classList.toggle('width', pdfState.fit === 'width');
     stage.classList.toggle('can-page', stage.scrollHeight <= stage.clientHeight + 2);
+    stage.classList.toggle('swipe-x', stage.scrollWidth <= stage.clientWidth + 2);
   }
 
   function pdfZoom(dir){
@@ -2023,6 +2028,94 @@
     pdfState.wheelAt = now;
     pdfZoom(e.deltaY < 0 ? 1 : -1);
   }, { passive:false });
+
+  /* ---------- 터치 스와이프로 페이지 넘기기 ---------- */
+  (function(){
+    var stage = el('pdfStage');
+    if (!stage) return;
+
+    var MIN_DIST = 42;    /* 이만큼은 밀어야 페이지가 넘어갑니다 */
+    var AXIS_RATIO = 1.25; /* 세로보다 가로로 확실히 많이 움직였을 때만 */
+    var START_SLOP = 8;    /* 이 전에는 방향을 확정하지 않습니다 */
+    var g = null;
+
+    function dragTo(px){
+      var c = el('pdfCanvas');
+      c.style.transition = 'none';
+      c.style.transform = 'translateX(' + px + 'px)';
+    }
+
+    function dragReset(){
+      var c = el('pdfCanvas');
+      if (!c.style.transform) return;
+      c.style.transition = 'transform .16s ease';
+      c.style.transform = '';
+      setTimeout(function(){ c.style.transition = ''; }, 180);
+    }
+
+    function edges(){
+      var max = stage.scrollWidth - stage.clientWidth;
+      return {
+        scrollable: max > 2,
+        atLeft: stage.scrollLeft <= 1,
+        atRight: stage.scrollLeft >= max - 1
+      };
+    }
+
+    stage.addEventListener('touchstart', function(e){
+      g = null;
+      if (!pdfState.doc || pdfState.total < 2) return;
+      if (e.touches.length !== 1) return; /* 두 손가락은 핀치 줌이므로 건드리지 않습니다 */
+      var t = e.touches[0];
+      g = { x0:t.clientX, y0:t.clientY, axis:null, ed:edges(), armed:false };
+    }, { passive:true });
+
+    stage.addEventListener('touchmove', function(e){
+      if (!g) return;
+      if (e.touches.length !== 1){ g = null; dragReset(); return; }
+
+      var t = e.touches[0];
+      var dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+
+      if (!g.axis){
+        if (Math.abs(dx) < START_SLOP && Math.abs(dy) < START_SLOP) return;
+        g.axis = (Math.abs(dx) > Math.abs(dy) * AXIS_RATIO) ? 'x' : 'y';
+      }
+      if (g.axis !== 'x') return;
+
+      /* 확대해서 가로 스크롤이 남아 있으면, 끝에 닿은 상태에서 바깥으로 밀 때만 페이지 제스처 */
+      if (g.ed.scrollable){
+        if (!((dx > 0 && g.ed.atLeft) || (dx < 0 && g.ed.atRight))) return;
+        g.armed = true;
+        return; /* 이 경우엔 화면이 튀지 않게 따라 밀지 않습니다 */
+      }
+
+      g.armed = true;
+      dragTo(dx * 0.32); /* 손끝을 살짝 따라오게 */
+    }, { passive:true });
+
+    stage.addEventListener('touchend', function(e){
+      var cur = g; g = null;
+      if (!cur || !cur.armed){ dragReset(); return; }
+
+      var t = e.changedTouches[0];
+      var dx = t ? t.clientX - cur.x0 : 0;
+      var dy = t ? t.clientY - cur.y0 : 0;
+      var ok = Math.abs(dx) >= MIN_DIST && Math.abs(dx) > Math.abs(dy) * AXIS_RATIO;
+
+      /* 손을 뗀 시점에도 여전히 끝에 붙어 있어야 페이지를 넘깁니다 */
+      if (ok && cur.ed.scrollable){
+        var now = edges();
+        ok = (dx > 0 && now.atLeft) || (dx < 0 && now.atRight);
+      }
+
+      dragReset();
+      if (!ok) return;
+      if (dx < 0) pdfNextPage(); else pdfPrevPage();
+    }, { passive:true });
+
+    stage.addEventListener('touchcancel', function(){ g = null; dragReset(); }, { passive:true });
+  })();
 
   document.addEventListener('keydown', function(e){
     if (!el('modalOverlay').classList.contains('open')) return;
@@ -2536,7 +2629,7 @@
   <div class="chat-foot">
     <div class="chat-form">
       <textarea class="chat-input" id="chatInput" rows="1" maxlength="500"
-                placeholder="궁금하신점 편하게 물어보세요" aria-label="메시지 입력"></textarea>
+                placeholder="궁금하신 점 편하게 물어보세요" aria-label="메시지 입력"></textarea>
       <button class="chat-send" id="chatSend" onclick="chatSend()" aria-label="보내기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2556,7 +2649,7 @@
      ========================================================== */
   var CHAT_ENDPOINT = 'https://portfolio-chat.gkwogns95.workers.dev/';
 
-  var WELCOME = '안녕하세요! 포트폴리오 어시스턴트입니다.\n궁금하신점 편하게 물어봐 주세요.';
+  var WELCOME = '안녕하세요! 포트폴리오 어시스턴트입니다.\n궁금하신 점 편하게 물어봐 주세요.';
   var CHIPS = [
     '어떤 일을 해오셨나요?',
     '가장 대표적인 프로젝트는?',
