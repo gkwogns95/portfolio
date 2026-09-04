@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <script>
   (function(){
-    var t = 'light';
+    /* 1순위: 사용자가 직접 고른 값 / 2순위: OS의 시스템 설정 */
+    var t = null;
     try { var v = localStorage.getItem('theme'); if (v === 'dark' || v === 'light') t = v; } catch(e){}
+    if (!t) {
+      t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
     document.documentElement.setAttribute('data-theme', t);
   })();
 </script>
@@ -16,7 +20,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <style>
   :root, :root[data-theme="light"]{
     color-scheme:light;
@@ -183,6 +186,25 @@
   :root[data-theme="dark"] .theme-toggle .i-sun{ display:block; }
   :root[data-theme="dark"] .theme-toggle .i-moon{ display:none; }
 
+  /* 모바일 메뉴 버튼 — 640px 이하에서만 노출 */
+  .nav__burger{
+    display:none; position:relative;
+    width:34px; height:34px; flex-shrink:0; padding:0;
+    border-radius:999px; cursor:pointer;
+    background:transparent; border:1px solid var(--line);
+    transition:border-color .18s ease, background-color .18s ease;
+  }
+  .nav__burger span{
+    position:absolute; left:50%; width:15px; height:1.6px; border-radius:2px;
+    background:var(--fg-3); transform:translateX(-50%);
+    transition:transform .22s ease, opacity .16s ease, background-color .18s ease;
+  }
+  .nav__burger:hover{ border-color:var(--fg-3); }
+  .nav__burger:hover span{ background:var(--fg); }
+  .nav__burger[aria-expanded="true"]{ border-color:var(--fg-3); }
+  .nav__burger[aria-expanded="true"] span{ background:var(--fg); }
+  .nav__burger[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+
   /* ============ Hero ============ */
   .hero{ position:relative; overflow:hidden; padding:118px 0 78px; }
   .hero__grid-bg{
@@ -255,7 +277,8 @@
   }
   .hero h1{
     font-weight:900; font-size:clamp(52px,8.4vw,86px); line-height:0.98;
-    margin:0 0 12px; letter-spacing:-0.045em;
+    /* 텍스트는 '하재훈'으로 두고 시각적 간격만 자간으로 처리 (스크린리더·검색엔진·복사 대응) */
+    margin:0 0 12px; letter-spacing:0.2em;
   }
   .hero__latin{
     font-family:var(--mono); font-size:15px; font-weight:400;
@@ -472,6 +495,7 @@
     box-shadow:var(--modal-shadow);
     --track:var(--research); --track-dim:var(--research-dim); --track-line:var(--research-line);
   }
+  .modal-box:focus{ outline:none; }
   .modal-box.has-doc{ height:96vh; }
   .modal-box.applied{ --track:var(--applied); --track-dim:var(--applied-dim); --track-line:var(--applied-line); }
 
@@ -729,10 +753,33 @@
     .nav .wrap{ padding:0 16px; height:58px; }
     .nav__name{ font-size:16px; white-space:nowrap; }
     .nav__name em{ display:none; }
-    .nav__links a{ font-size:12.5px; padding:6px 7px; white-space:nowrap; }
     .nav__right{ gap:6px; }
     .theme-toggle{ width:30px; height:30px; }
-    .hero h1{ letter-spacing:-0.04em; }
+
+    /* 링크를 줄여 넣는 대신 햄버거 + 드롭다운으로 전환 */
+    .nav__burger{ display:block; width:30px; height:30px; }
+    .nav__burger span:nth-child(1){ top:9.4px; }
+    .nav__burger span:nth-child(2){ top:14.2px; }
+    .nav__burger span:nth-child(3){ top:19px; }
+    .nav__burger[aria-expanded="true"] span:nth-child(1){ transform:translateX(-50%) translateY(4.8px) rotate(45deg); }
+    .nav__burger[aria-expanded="true"] span:nth-child(3){ transform:translateX(-50%) translateY(-4.8px) rotate(-45deg); }
+
+    .nav__links{
+      position:absolute; top:100%; right:16px; left:16px;
+      flex-direction:column; gap:2px;
+      margin-top:8px; padding:8px;
+      background:var(--glass);
+      backdrop-filter:blur(14px) saturate(160%);
+      border:1px solid var(--line); border-radius:14px;
+      box-shadow:var(--card-shadow-hover);
+      opacity:0; visibility:hidden; transform:translateY(-8px);
+      transition:opacity .18s ease, transform .18s ease, visibility .18s;
+    }
+    .nav__links.open{ opacity:1; visibility:visible; transform:none; }
+    .nav__links a{ font-size:14.5px; padding:11px 14px; border-radius:9px; white-space:nowrap; }
+    .nav__links a.active{ border-radius:9px; }
+
+    .hero h1{ letter-spacing:0.16em; }
     .readout dd{ font-size:20px; }
   }
   @media (max-width:820px){
@@ -796,6 +843,7 @@
     <circle cx="12" cy="12" r="4.1"></circle>
     <circle cx="17.5" cy="6.5" r="1.15" fill="currentColor" stroke="none"></circle>
   </symbol>
+  <!-- 전화번호 링크는 크롤러 노출 때문에 제거했지만, 되살릴 수 있도록 아이콘은 남겨둠 -->
   <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path>
   </symbol>
@@ -805,12 +853,16 @@
   <div class="wrap">
     <a class="nav__name" href="#top">하재훈 <em>Jaehoon Ha</em></a>
     <div class="nav__right">
-      <ul class="nav__links">
+      <ul class="nav__links" id="navLinks">
         <li><a href="#about">소개</a></li>
         <li><a href="#experience">경력 · 학력</a></li>
         <li><a href="#projects">프로젝트</a></li>
         <li><a href="#contact">연락처</a></li>
       </ul>
+      <button class="nav__burger" id="navBurger" onclick="toggleNav()"
+              aria-expanded="false" aria-controls="navLinks" aria-label="메뉴 열기">
+        <span></span><span></span><span></span>
+      </button>
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="밝은 모드 / 어두운 모드 전환">
         <svg class="i-sun" aria-hidden="true"><use href="#icon-sun"></use></svg>
         <svg class="i-moon" aria-hidden="true"><use href="#icon-moon"></use></svg>
@@ -924,11 +976,11 @@
   </div>
   <div class="wrap">
     <p class="hero__role">AI Engineer · Data Scientist</p>
-    <h1>하 재 훈</h1>
+    <h1>하재훈</h1>
     <p class="hero__latin">Jaehoon Ha</p>
     <p class="lede">헬스케어, 게임, 오디오, 플랫폼서비스 등 다양한 도메인에서 AI를 기획하고 모델을 만들어왔습니다. 통계 분석과 머신러닝 모델링까지 다루는 데이터 사이언티스트이자 AI 엔지니어입니다.</p>
     <dl class="readout">
-      <div><dt>총 경력</dt><dd>3Y 10M</dd></div>
+      <div><dt>총 경력</dt><dd id="careerTotal">3Y 10M</dd></div>
       <div><dt>연구 논문 (1저자)</dt><dd>2편</dd></div>
       <div><dt>특허 출원 진행중</dt><dd>1건</dd></div>
       <div><dt>직장 경력</dt><dd>3곳</dd></div>
@@ -1268,8 +1320,8 @@
         <p class="lede">사용자의 손끝에서 동작하는 AI를 만드는 AI 연구원입니다. 데이터로 문제를 정확히 정의하고 생성형 AI로 답을 구현해, 연구와 서비스 사이의 거리를 좁히는 엔지니어가 되겠습니다.</p>
       </div>
       <div class="contact-links">
-        <a href="mailto:gkwogns95@gmail.com"><svg class="mat-icon"><use href="#icon-mail"></use></svg>gkwogns95@gmail.com</a>
-        <a href="tel:010-4797-5923"><svg class="mat-icon"><use href="#icon-phone"></use></svg>010-4797-5923</a>
+        <!-- 이메일은 크롤러가 긁어가지 못하도록 조각으로 나눠두고 JS가 조립합니다 -->
+        <a id="mailLink" href="#" rel="nofollow" data-u="gkwogns95" data-d="gmail" data-t="com"><svg class="mat-icon"><use href="#icon-mail"></use></svg><span id="mailText">이메일 주소 보기</span></a>
         <a href="https://www.instagram.com/hooni._.95" target="_blank" rel="noopener"><svg class="mat-icon"><use href="#icon-instagram"></use></svg>hooni._.95</a>
       </div>
     </div>
@@ -1282,7 +1334,7 @@
 </footer>
 
 <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeProject()">
-  <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box" id="modalBox" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
     <header class="modal-head">
       <span class="modal-head__label" id="modalLabel"></span>
       <h4 id="modalTitle"></h4>
@@ -1327,8 +1379,43 @@
 </div>
 
 <script>
-  if (window.pdfjsLib) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  /* ============================================================
+     pdf.js 4.x 지연 로딩
+     - v4부터 UMD 빌드가 없어져서 ESM(.mjs)을 동적 import() 로 불러옵니다.
+     - 모달을 처음 열 때만 로드하므로 첫 페이지 진입이 빨라집니다.
+     - 1차 jsDelivr, 실패 시 2차 cdnjs로 폴백합니다.
+     ============================================================ */
+  var PDFJS_VERSION = '4.10.38';
+  var PDFJS_CDNS = [
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@' + PDFJS_VERSION + '/legacy/build/',
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/' + PDFJS_VERSION + '/'
+  ];
+  var pdfLibPromise = null;
+
+  function ensurePdfLib(){
+    if (pdfLibPromise) return pdfLibPromise;
+    if (typeof Promise === 'undefined') return null;
+
+    var i = 0;
+    function attempt(){
+      if (i >= PDFJS_CDNS.length) return Promise.reject(new Error('pdf.js load failed'));
+      var base = PDFJS_CDNS[i++];
+      return import(base + 'pdf.min.mjs').then(function(lib){
+        /* 워커가 교차 출처여도 pdf.js가 내부에서 blob으로 감싸 처리합니다 */
+        lib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.mjs';
+        window.pdfjsLib = lib;
+        return lib;
+      }).catch(function(err){
+        if (i < PDFJS_CDNS.length) return attempt();
+        throw err;
+      });
+    }
+
+    pdfLibPromise = attempt().catch(function(err){
+      pdfLibPromise = null; /* 다음 시도 때 다시 받도록 초기화 */
+      throw err;
+    });
+    return pdfLibPromise;
   }
 
   /* ============================================================
@@ -1546,6 +1633,7 @@
   var pdfState = { doc:null, page:1, total:0, token:0, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
   var ZOOM_MIN = 0.5, ZOOM_MAX = 3.2, ZOOM_STEP = 0.25;
   var current = { id:null, docIndex:0 };
+  var lastFocused = null;
 
   function el(id){ return document.getElementById(id); }
 
@@ -1555,6 +1643,7 @@
     if (!p) return;
     current.id = id;
     current.docIndex = docIndex || 0;
+    lastFocused = document.activeElement; /* 닫을 때 원래 자리로 포커스를 되돌리기 위해 */
 
     var box = el('modalBox');
     box.classList.toggle('applied', p.track === 'applied');
@@ -1585,6 +1674,7 @@
     el('modalOverlay').classList.add('open');
     document.body.style.overflow = 'hidden';
     el('paneDetail').scrollTop = 0;
+    box.focus(); /* 스크린리더가 모달 제목부터 읽도록 */
     if (hasDocs) loadDoc(p.docs[current.docIndex].url);
   }
 
@@ -1647,18 +1737,26 @@
     el('pdfNextBtn').disabled = true;
     setStage('loading', '자료를 불러오는 중입니다.');
 
-    if (!window.pdfjsLib){
+    var libPromise = ensurePdfLib();
+    if (!libPromise){
       setStage('error', 'PDF 뷰어를 불러오지 못했습니다.', '네트워크 상태를 확인한 뒤 새로고침해 주세요.');
       return;
     }
 
-    pdfjsLib.getDocument(url).promise.then(function(doc){
-      if (token !== pdfState.token) return;
+    libPromise.then(function(lib){
+      if (token !== pdfState.token) return null;
+      return lib.getDocument(url).promise;
+    }).then(function(doc){
+      if (!doc || token !== pdfState.token) return;
       pdfState.doc = doc;
       pdfState.total = doc.numPages;
       renderPdfPage(1);
     }).catch(function(){
       if (token !== pdfState.token) return;
+      if (!window.pdfjsLib){
+        setStage('error', 'PDF 뷰어를 불러오지 못했습니다.', '네트워크 상태를 확인한 뒤 새로고침해 주세요.');
+        return;
+      }
       setStage('error', '자료를 불러올 수 없습니다.',
         'assets/pdf/ 폴더에 파일이 있는지, 그리고 file:// 이 아닌 웹 서버(GitHub Pages 등)로 열고 있는지 확인해 주세요.');
     });
@@ -1801,6 +1899,29 @@
     document.body.style.overflow = '';
     cancelRender();
     pdfState = { doc:null, page:1, total:0, token:pdfState.token + 1, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
+    if (lastFocused && typeof lastFocused.focus === 'function'){
+      try { lastFocused.focus(); } catch(e){}
+    }
+    lastFocused = null;
+  }
+
+  /* ---------- 모달 포커스 트랩 ---------- */
+  var FOCUSABLE_SEL = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+  function trapModalFocus(e){
+    var box = el('modalBox');
+    var items = Array.prototype.slice.call(box.querySelectorAll(FOCUSABLE_SEL))
+      .filter(function(n){ return n.offsetWidth > 0 || n.offsetHeight > 0; });
+    if (!items.length) return;
+
+    var first = items[0], last = items[items.length - 1];
+    if (!box.contains(document.activeElement)){
+      e.preventDefault(); first.focus();
+    } else if (e.shiftKey && document.activeElement === first){
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last){
+      e.preventDefault(); first.focus();
+    }
   }
 
   el('pdfCanvas').addEventListener('click', function(e){
@@ -1822,7 +1943,8 @@
 
   document.addEventListener('keydown', function(e){
     if (!el('modalOverlay').classList.contains('open')) return;
-    if (e.key === 'Escape') closeProject();
+    if (e.key === 'Escape') { closeProject(); return; }
+    if (e.key === 'Tab') { trapModalFocus(e); return; }
     if (e.key === 'ArrowRight') pdfNextPage();
     if (e.key === 'ArrowLeft') pdfPrevPage();
     if (e.key === '+' || e.key === '=') { e.preventDefault(); pdfZoom(1); }
@@ -1844,6 +1966,20 @@
     root.setAttribute('data-theme', next);
     try { localStorage.setItem('theme', next); } catch(e){}
   }
+
+  /* 사용자가 직접 고른 적이 없다면 OS 테마 변경을 실시간으로 따라갑니다 */
+  (function(){
+    if (!window.matchMedia) return;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    function follow(e){
+      var saved = null;
+      try { saved = localStorage.getItem('theme'); } catch(err){}
+      if (saved === 'dark' || saved === 'light') return;
+      document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    }
+    if (mq.addEventListener) mq.addEventListener('change', follow);
+    else if (mq.addListener) mq.addListener(follow);
+  })();
 
   /* ---------- 카드 스포트라이트 ---------- */
   document.querySelectorAll('.card').forEach(function(card){
@@ -1867,6 +2003,89 @@
       });
     }, { rootMargin: '-45% 0px -50% 0px' });
     targets.forEach(function(t){ if (t) obs.observe(t); });
+  })();
+
+  /* ---------- 모바일 네비게이션 ---------- */
+  function toggleNav(force){
+    var btn = el('navBurger'), list = el('navLinks');
+    if (!btn || !list) return;
+    var open = (typeof force === 'boolean') ? force : !list.classList.contains('open');
+    list.classList.toggle('open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+  }
+
+  (function(){
+    var list = el('navLinks'), btn = el('navBurger');
+    if (!list || !btn) return;
+
+    /* 항목을 고르면 바로 닫기 */
+    list.addEventListener('click', function(e){
+      if (e.target.closest && e.target.closest('a')) toggleNav(false);
+    });
+
+    /* 바깥을 누르면 닫기 */
+    document.addEventListener('click', function(e){
+      if (!list.classList.contains('open')) return;
+      if (e.target.closest && (e.target.closest('#navLinks') || e.target.closest('#navBurger'))) return;
+      toggleNav(false);
+    });
+
+    /* ESC로 닫고 버튼으로 포커스 복귀 */
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && list.classList.contains('open')){
+        toggleNav(false);
+        btn.focus();
+      }
+    });
+
+    /* 데스크톱 폭으로 돌아가면 열린 상태를 정리 */
+    var navResizeTimer;
+    window.addEventListener('resize', function(){
+      clearTimeout(navResizeTimer);
+      navResizeTimer = setTimeout(function(){
+        if (window.innerWidth > 640 && list.classList.contains('open')) toggleNav(false);
+      }, 120);
+    });
+  })();
+
+  /* ---------- 총 경력 자동 계산 ---------- */
+  (function(){
+    /* ▼ 기준점 — 2026년 9월에 총 경력 46개월(3년 10개월).
+         이후로는 매달 1개월씩 자동으로 늘어납니다.
+         (참고 재직 기간: 엔씨소프트 2021.12~2022.09 /
+          연세대 Computational Media Lab 2023.03~2025.02 / 엘림넷 2025.08~현재)
+         경력을 다시 세야 하면 아래 두 값만 고치면 됩니다. */
+    var ANCHOR_MONTH  = '2026-09';
+    var ANCHOR_MONTHS = 46;
+
+    var out = el('careerTotal');
+    if (!out) return;
+
+    var a = ANCHOR_MONTH.split('-');
+    var now = new Date();
+    var elapsed = (now.getFullYear() - Number(a[0])) * 12 +
+                  (now.getMonth() + 1 - Number(a[1]));
+    var months = ANCHOR_MONTHS + Math.max(0, elapsed);
+
+    var y = Math.floor(months / 12), m = months % 12;
+    out.textContent = m ? (y + 'Y ' + m + 'M') : (y + 'Y');
+  })();
+
+  /* ---------- 이메일 조립 (소스에 평문으로 남기지 않기 위함) ---------- */
+  (function(){
+    var a = el('mailLink'), label = el('mailText');
+    if (!a || !label) return;
+
+    var addr = a.getAttribute('data-u') + String.fromCharCode(64) +
+               a.getAttribute('data-d') + '.' + a.getAttribute('data-t');
+
+    a.href = 'mailto:' + addr;
+    label.textContent = addr;
+    a.removeAttribute('data-u');
+    a.removeAttribute('data-d');
+    a.removeAttribute('data-t');
+    a.removeAttribute('rel');
   })();
 </script>
 
