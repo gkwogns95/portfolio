@@ -19,9 +19,9 @@
 <meta name="author" content="하재훈 (Jaehoon Ha)">
 
 <!-- ============================================================
-     ⚠️ 배포 전 확인 — 아래 4곳의 주소를 실제 배포 URL로 바꿔주세요.
-        (canonical / og:url / og:image / twitter:image)
-        카카오톡은 og:image에 상대경로를 쓰면 썸네일이 안 뜹니다. 반드시 절대주소로.
+     배포 주소가 바뀌면 아래 절대주소들을 함께 고쳐야 합니다.
+     (canonical / og:url / og:image / twitter:image / JSON-LD의 url·image — 총 6곳)
+     카카오톡은 og:image가 절대주소가 아니면 썸네일을 띄우지 않습니다.
      ============================================================ -->
 <link rel="canonical" href="https://gkwogns95.github.io/portfolio/">
 
@@ -56,6 +56,47 @@
 <meta name="twitter:title" content="하재훈 — AI Engineer · Data Scientist">
 <meta name="twitter:description" content="딥보이스 탐지, RAG, LLM 파인튜닝 연구와 생성형 AI 서비스 개발. 연구 논문 2편, 특허 출원 1건, ASK 2024 우수논문상.">
 <meta name="twitter:image" content="https://gkwogns95.github.io/portfolio/assets/og-image.png">
+
+<!-- 구조화 데이터 — 구글이 이름·직함·학력·소속·수상을 한 인물로 묶어 인식하게 함 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "하재훈",
+  "alternateName": "Jaehoon Ha",
+  "jobTitle": ["AI Engineer", "Data Scientist"],
+  "description": "딥보이스 탐지, RAG, LLM 파인튜닝 연구와 생성형 AI 서비스 개발을 하는 AI 엔지니어이자 데이터 사이언티스트.",
+  "url": "https://gkwogns95.github.io/portfolio/",
+  "image": "https://gkwogns95.github.io/portfolio/assets/og-image.png",
+  "sameAs": ["https://www.instagram.com/hooni._.95"],
+  "worksFor": {
+    "@type": "Organization",
+    "name": "엘림넷"
+  },
+  "alumniOf": [
+    {
+      "@type": "CollegeOrUniversity",
+      "name": "Pennsylvania State University",
+      "sameAs": "https://www.psu.edu/"
+    },
+    {
+      "@type": "CollegeOrUniversity",
+      "name": "연세대학교 대학원",
+      "sameAs": "https://www.yonsei.ac.kr/"
+    }
+  ],
+  "knowsAbout": [
+    "생성형 AI", "Large Language Model", "Prompt Engineering",
+    "Retrieval-Augmented Generation", "LLM Fine-tuning",
+    "Deepfake Detection", "통계 분석", "Machine Learning"
+  ],
+  "award": [
+    "ASK 2024 학회 우수논문상 (1저자)",
+    "2024 연세 디지털헬스케어대회 장려상",
+    "LG Aimers 4기 해커톤 844팀 중 30위"
+  ]
+}
+</script>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -74,18 +115,18 @@
 
     --fg:#0C1120;
     --fg-2:#414A5E;
-    --fg-3:#6D7689;
+    --fg-3:#687082;   /* 작은 라벨용 — #F2F4F9 위에서 4.51:1 (WCAG AA) */
 
     --research:#4A5BD4;
     --research-dim:rgba(74,91,212,0.07);
     --research-line:rgba(74,91,212,0.28);
-    --applied:#0B9A7C;
+    --applied:#097E66;   /* 4.56:1 */
     --applied-dim:rgba(11,154,124,0.07);
     --applied-line:rgba(11,154,124,0.26);
-    --gold:#A96A12;
+    --gold:#9D6311;      /* 4.52:1 */
     --gold-dim:rgba(169,106,18,0.07);
     --gold-line:rgba(169,106,18,0.28);
-    --elimnet:#D2600C;
+    --elimnet:#B5530A;   /* 4.54:1 */
     --elimnet-dim:rgba(210,96,12,0.07);
     --elimnet-line:rgba(210,96,12,0.28);
     --ncsoft:#8E24C9;
@@ -299,6 +340,8 @@
   .hero__chart .flow-dot.c-a{ fill:var(--research); }
   .hero__chart .flow-dot.c-b{ fill:var(--gold); }
   .hero__chart .flow-dot.c-c{ fill:var(--applied); }
+  /* 화면 밖이거나 탭이 백그라운드일 때 정지 (SMIL은 JS의 pauseAnimations가 담당) */
+  .hero__chart.is-paused .ridge{ animation-play-state:paused; }
   @media (prefers-reduced-motion: reduce){
     .hero__chart .ridge{ opacity:1; animation:none; transform:none; }
     .hero__chart .chart-sweep,
@@ -1036,7 +1079,7 @@
     </div>
     <div class="about__grid">
       <div class="about__text">
-        <p>펜실베이니아 주립대에서 데이터 분석을 전공하며 통계와 머신러닝의 기초를 다졌습니다. 이후 엔씨소프트 컬처라이제이션 PM팀에서 게임 로컬라이징과 사내 LLM(VARCO) 학습 데이터 품질 관리, RLHF 프로세스에 참여하며 AI가 실제 서비스에 적용되는 과정을 가까이서 지켜본 것이 AI 분야로 전향하게 된 계기가 되었습니다.</p>
+        <p>펜실베니아 주립대에서 데이터 분석을 전공하며 통계와 머신러닝의 기초를 다졌습니다. 이후 엔씨소프트 컬처라이제이션 PM팀에서 게임 로컬라이징과 사내 LLM(VARCO) 학습 데이터 품질 관리, RLHF 프로세스에 참여하며 AI가 실제 서비스에 적용되는 과정을 가까이서 지켜본 것이 AI 분야로 전향하게 된 계기가 되었습니다.</p>
         <p>이후 연세대학교 Computational Media Lab에 진학해 AI를 연구했습니다. 딥보이스 탐지, RAG 기반 검색 강화, LLM 파인튜닝 등 다양한 프로젝트에서 통계적 검증과 생성형 AI를 함께 다루는 역량을 쌓았고, 그 성과로 ASK 2024 학회 우수논문상을 수상했습니다.</p>
         <p>현재는 엘림넷에서 시험출제, 설문생성, 자기진단 AI 등 생성형 AI 기반 서비스를 기획부터 개발까지 책임지고 있으며, 통계 분석 모듈까지 함께 고도화하며 데이터 사이언스와 생성형 AI 엔지니어링을 모두 아우르는 개발자로 성장하고 있습니다.</p>
       </div>
@@ -2112,6 +2155,33 @@
     out.textContent = m ? (y + 'Y ' + m + 'M') : (y + 'Y');
   })();
 
+  /* ---------- hero 차트 애니메이션 절전 ---------- */
+  (function(){
+    var chart = document.querySelector('.hero__chart');
+    if (!chart) return;
+    var svg = chart.querySelector('svg');
+    var onScreen = true, running = true;
+
+    function apply(){
+      var run = onScreen && !document.hidden;
+      if (run === running) return;
+      running = run;
+      chart.classList.toggle('is-paused', !run);
+      /* CSS 애니메이션은 클래스로, SVG SMIL(스윕·흐르는 점)은 아래 API로 제어 */
+      if (svg && svg.pauseAnimations){
+        try { run ? svg.unpauseAnimations() : svg.pauseAnimations(); } catch(e){}
+      }
+    }
+
+    if ('IntersectionObserver' in window){
+      new IntersectionObserver(function(entries){
+        onScreen = entries[0].isIntersecting;
+        apply();
+      }, { threshold:0 }).observe(chart);
+    }
+    document.addEventListener('visibilitychange', apply);
+  })();
+
   /* ---------- 이메일 조립 (소스에 평문으로 남기지 않기 위함) ---------- */
   (function(){
     var a = el('mailLink'), label = el('mailText');
@@ -2466,7 +2536,7 @@
   <div class="chat-foot">
     <div class="chat-form">
       <textarea class="chat-input" id="chatInput" rows="1" maxlength="500"
-                placeholder="궁금하신 점 편하게 물어보세요" aria-label="메시지 입력"></textarea>
+                placeholder="궁금하신점 편하게 물어보세요" aria-label="메시지 입력"></textarea>
       <button class="chat-send" id="chatSend" onclick="chatSend()" aria-label="보내기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2486,7 +2556,7 @@
      ========================================================== */
   var CHAT_ENDPOINT = 'https://portfolio-chat.gkwogns95.workers.dev/';
 
-  var WELCOME = '안녕하세요! 포트폴리오 어시스턴트입니다.\n궁금하신 점 편하게 물어봐 주세요.';
+  var WELCOME = '안녕하세요! 포트폴리오 어시스턴트입니다.\n궁금하신점 편하게 물어봐 주세요.';
   var CHIPS = [
     '어떤 일을 해오셨나요?',
     '가장 대표적인 프로젝트는?',
