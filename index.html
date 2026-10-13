@@ -1344,9 +1344,57 @@
     .project-group__head h3{ font-size:19px; }
   }
 
+  /* ============ 추가: 방문자 카운터 ============ */
+  .visit{
+    display:inline-flex; align-items:center; gap:9px;
+    margin:26px 0 0; padding:5px 12px 5px 10px;
+    font-family:var(--mono); font-size:11px; font-weight:500; line-height:1;
+    letter-spacing:0.06em; color:var(--fg-3);
+    border:1px solid var(--line-soft); border-radius:999px;
+    background:color-mix(in srgb, var(--panel) 55%, transparent);
+    font-variant-numeric:tabular-nums;
+    opacity:0; transform:translateY(4px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .visit.is-ready{ opacity:1; transform:none; }
+  .visit__dot{
+    position:relative; width:6px; height:6px; border-radius:50%;
+    background:var(--applied); flex-shrink:0;
+  }
+  .visit__dot::after{
+    content:""; position:absolute; inset:0; border-radius:50%;
+    background:var(--applied); opacity:.5;
+    animation:visitPulse 2.6s ease-out infinite;
+  }
+  @keyframes visitPulse{ 0%{ transform:scale(1); opacity:.5; } 80%,100%{ transform:scale(2.6); opacity:0; } }
+  .visit__item{ display:inline-flex; align-items:baseline; gap:6px; }
+  .visit__v{ color:var(--fg-2); font-weight:700; letter-spacing:0.01em; }
+  .visit__sep{ width:1px; height:9px; background:var(--line); }
+  @media (max-width:640px){ .visit{ margin-top:22px; } }
+
+  /* ============ 추가: UX 보완 ============ */
+  /* 고정 상단 바에 섹션 제목이 가리지 않도록 */
+  section[id], footer[id]{ scroll-margin-top:20px; }
+
+  /* 키보드 사용자용 '본문 바로가기' — 포커스될 때만 보임 */
+  .skip-link{
+    position:fixed; top:12px; left:50%; z-index:100;
+    transform:translate(-50%, -160%);
+    padding:10px 18px; border-radius:999px;
+    background:var(--fg); color:var(--bg);
+    font-size:13.5px; font-weight:600; text-decoration:none;
+    transition:transform .2s ease;
+  }
+  .skip-link:focus{ transform:translate(-50%, 0); }
+
+  /* 카드 아무 곳이나 눌러도 자료가 열리도록 */
+  .pcard[data-open]{ cursor:pointer; }
+
 </style>
 </head>
 <body>
+
+<a class="skip-link" href="#about">본문 바로가기</a>
 
 <svg style="display:none" aria-hidden="true">
   <symbol id="icon-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1560,6 +1608,12 @@
       <div><dt>특허 출원 진행중</dt><dd>1건</dd></div>
       <div><dt>직장 경력</dt><dd>3곳</dd></div>
     </dl>
+    <p class="visit" id="visitCounter" aria-label="방문자 수">
+      <span class="visit__dot" aria-hidden="true"></span>
+      <span class="visit__item">TODAY <span class="visit__v" id="visitToday">0</span></span>
+      <span class="visit__sep" aria-hidden="true"></span>
+      <span class="visit__item">TOTAL <span class="visit__v" id="visitTotal">0</span></span>
+    </p>
   </div>
 </header>
 
@@ -3565,6 +3619,170 @@
       if (e.key === 'Escape' && state.open){ window.chatToggle(); fabEl.focus(); }
     });
   });
+})();
+</script>
+
+<script>
+/* ============================================================
+   추가: 방문자 카운터
+   - 같은 브라우저는 하루(한국 시간 기준)에 한 번만 집계됩니다. 새로고침으로는 늘지 않습니다.
+   - 본인 방문 제외: 주소 뒤에 ?nocount 를 붙여 한 번 접속하면 그 브라우저는 영구 제외 (?count 로 해제)
+   - localhost · file:// 에서는 숫자만 읽고 집계하지 않습니다.
+   - 서버(Worker)에 연결되지 않으면 카운터는 표시되지 않습니다.
+   ============================================================ */
+(function(){
+  var VISIT_ENDPOINT = 'https://portfolio-counter.gkwogns95.workers.dev/';
+
+  var box = document.getElementById('visitCounter');
+  if (!box || !window.fetch) return;
+
+  function store(k, v){
+    try{
+      if (v === undefined) return localStorage.getItem(k);
+      if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+    }catch(e){ return null; }
+  }
+
+  /* 본인 방문 제외 스위치 */
+  try{
+    var q = new URLSearchParams(location.search);
+    if (q.has('nocount') || q.has('count')){
+      store('ha-visit-ignore', q.has('nocount') ? '1' : null);
+      q.delete('nocount'); q.delete('count');
+      var rest = q.toString();
+      history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    }
+  }catch(e){}
+
+  var kstDay = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  var local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var shouldHit = !local && !navigator.webdriver &&
+                  store('ha-visit-ignore') !== '1' && store('ha-visit-day') !== kstDay;
+
+  var ctrl = ('AbortController' in window) ? new AbortController() : null;
+  var timer = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 5000);
+
+  fetch(VISIT_ENDPOINT, {
+    method: shouldHit ? 'POST' : 'GET',
+    cache: 'no-store',
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r){
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }).then(function(d){
+    clearTimeout(timer);
+    if (typeof d.total !== 'number' || typeof d.today !== 'number') return;
+    if (shouldHit) store('ha-visit-day', kstDay);
+    show(d.today, d.total);
+  }).catch(function(){ clearTimeout(timer); });
+
+  function fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
+
+  function show(today, total){
+    var tEl = document.getElementById('visitToday');
+    var aEl = document.getElementById('visitTotal');
+    box.title = '오늘 ' + fmt(today) + '명 · 누적 ' + fmt(total) + '명';
+    box.setAttribute('aria-label', '방문자 수 — ' + box.title);
+    box.classList.add('is-ready');
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !window.requestAnimationFrame){
+      tEl.textContent = fmt(today); aEl.textContent = fmt(total);
+      return;
+    }
+    /* 짧게 올라가며 표시되는 카운트업 */
+    var t0 = null, dur = 900;
+    var fromT = 0, fromA = Math.max(0, total - Math.min(total, 36));
+    function step(ts){
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 3);
+      tEl.textContent = fmt(fromT + (today - fromT) * e);
+      aEl.textContent = fmt(fromA + (total - fromA) * e);
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+})();
+
+/* ============================================================
+   추가: UX 보완
+   ============================================================ */
+
+/* 1) 휴대폰 '뒤로가기'가 사이트를 떠나지 않고 열린 창(프로젝트 상세 · 챗봇)을 닫도록 */
+(function(){
+  if (!window.history || !history.pushState) return;
+  var origOpen = window.openProject, origClose = window.closeProject;
+  var modalHist = false;
+
+  if (typeof origOpen === 'function' && typeof origClose === 'function'){
+    window.openProject = function(){
+      var wasOpen = document.getElementById('modalOverlay').classList.contains('open');
+      origOpen.apply(this, arguments);
+      if (!wasOpen && !modalHist){ history.pushState({ haLayer:'modal' }, ''); modalHist = true; }
+    };
+    window.closeProject = function(){
+      origClose.apply(this, arguments);
+      if (modalHist){ modalHist = false; history.back(); }
+    };
+  }
+
+  var origChat = window.chatToggle;
+  var chatHist = false;
+  function chatIsOpen(){ var p = document.getElementById('chatPanel'); return !!(p && p.classList.contains('open')); }
+  function sheetMode(){ return window.matchMedia && window.matchMedia('(max-width:520px)').matches; }
+
+  if (typeof origChat === 'function'){
+    window.chatToggle = function(){
+      var wasOpen = chatIsOpen();
+      origChat.apply(this, arguments);
+      if (!wasOpen && chatIsOpen() && sheetMode() && !chatHist){
+        history.pushState({ haLayer:'chat' }, ''); chatHist = true;
+      } else if (wasOpen && !chatIsOpen() && chatHist){
+        chatHist = false; history.back();
+      }
+    };
+  }
+
+  window.addEventListener('popstate', function(){
+    if (modalHist && document.getElementById('modalOverlay').classList.contains('open')){
+      modalHist = false; origClose();
+      return;
+    }
+    if (chatHist && chatIsOpen()){
+      chatHist = false; origChat();
+    }
+  });
+})();
+
+/* 2) 프로젝트 카드 빈 곳을 눌러도 첫 번째 자료가 열리도록 (글자를 드래그 선택 중일 땐 제외) */
+(function(){
+  Array.prototype.forEach.call(document.querySelectorAll('.pcard'), function(card){
+    var primary = card.querySelector('.card__materials .mat-btn');
+    if (!primary) return;
+    card.setAttribute('data-open', '');
+    card.addEventListener('click', function(e){
+      if (e.target.closest('a, button')) return;
+      var sel = window.getSelection && window.getSelection();
+      if (sel && String(sel).length) return;
+      primary.click();
+    });
+  });
+})();
+
+/* 3) 직접 고른 테마에 맞춰 모바일 상단 상태바 색도 같이 바뀌도록 */
+(function(){
+  var metas = document.querySelectorAll('meta[name="theme-color"]');
+  if (!metas.length) return;
+  var root = document.documentElement;
+  function sync(){
+    var c = root.getAttribute('data-theme') === 'dark' ? '#0D111C' : '#F2F4F9';
+    Array.prototype.forEach.call(metas, function(m){ m.setAttribute('content', c); });
+  }
+  sync();
+  if ('MutationObserver' in window){
+    new MutationObserver(sync).observe(root, { attributes:true, attributeFilter:['data-theme'] });
+  }
 })();
 </script>
 
