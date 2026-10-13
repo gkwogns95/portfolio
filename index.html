@@ -988,12 +988,19 @@
     position:absolute; inset:0; display:flex;
     padding:16px; overflow:auto; border-radius:inherit;
     overscroll-behavior:contain;
+    /* 브라우저 기본 핀치 확대·더블탭 확대는 막고(직접 처리), 한 손가락 스크롤은 그대로 */
+    touch-action:pan-x pan-y;
+    -webkit-user-select:none; user-select:none;
+    -webkit-touch-callout:none;
   }
   .pdf-stage canvas{
     margin:auto; max-width:none; height:auto; display:block;
     border-radius:3px; box-shadow:var(--canvas-shadow);
+    -webkit-user-drag:none;
   }
-  .pdf-stage.can-page canvas{ cursor:pointer; }
+  /* 확대되어 화면보다 커지면 드래그로 이동 */
+  .pdf-stage.can-pan{ cursor:grab; overscroll-behavior:contain; }
+  .pdf-stage.is-dragging{ cursor:grabbing; }
   .pdf-status{
     margin:auto; padding:0 28px; text-align:center;
     font-size:13.5px; color:var(--fg-3); line-height:1.7; max-width:44ch;
@@ -2249,8 +2256,8 @@
     { key:'results',      label:'성과' }
   ];
 
-  var pdfState = { doc:null, page:1, total:0, token:0, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
-  var ZOOM_MIN = 0.5, ZOOM_MAX = 3.2, ZOOM_STEP = 0.25;
+  var pdfState = { doc:null, page:1, total:0, token:0, task:null, zoom:1, fit:'auto', seq:0, baseW:0, baseH:0, hiTimer:null };
+  var ZOOM_MIN = 0.5, ZOOM_MAX = 4, ZOOM_STEP = 0.25;
   var current = { id:null, docIndex:0 };
   var lastFocused = null;
 
@@ -2458,8 +2465,11 @@
     var token = ++pdfState.token;
     cancelRender();
     pdfState.doc = null;
+    clearTimeout(pdfState.hiTimer);
     pdfState.zoom = 1;
     pdfState.fit = 'auto';
+    pdfState.baseW = 0;
+    pdfState.baseH = 0;
     el('pdfDownloadLink').href = url;
     el('pdfPageIndicator').textContent = '';
     el('pdfPrevBtn').disabled = true;
@@ -2511,19 +2521,16 @@
     }
   }
 
-  /* 세로형(논문) 문서는 가로 폭에 맞춰 세로 스크롤, 가로형(발표 슬라이드)은 한 페이지 전체 표시 */
-  function renderPdfPage(num, keepAnchor){
+  /* 세로형(논문) 문서는 가로 폭에 맞춰 세로 스크롤, 가로형(발표 슬라이드)은 한 페이지 전체 표시
+     mode === 'keep' : 확대 직후 고해상도로 다시 그릴 때 — 스크롤 위치를 건드리지 않음
+     그 외          : 처음 열기 · 페이지 이동 · 맞춤 전환 — 맨 위 / 가운데로 정렬
+     화면 밖 캔버스에 먼저 그린 뒤 한 번에 옮겨 그려서, 확대할 때 화면이 깜빡이지 않게 함 */
+  function renderPdfPage(num, mode){
     if (!pdfState.doc) return;
+    clearTimeout(pdfState.hiTimer);
     var token = pdfState.token;
     var seq = ++pdfState.seq;
     var stage = el('pdfStage');
-    var anchor = null;
-    if (keepAnchor && stage.scrollHeight > 0){
-      anchor = {
-        x: (stage.scrollLeft + stage.clientWidth / 2) / Math.max(1, stage.scrollWidth),
-        y: (stage.scrollTop + stage.clientHeight / 2) / Math.max(1, stage.scrollHeight)
-      };
-    }
 
     pdfState.doc.getPage(num).then(function(page){
       if (token !== pdfState.token || seq !== pdfState.seq) return;
@@ -2537,41 +2544,90 @@
       var fitScale = (pdfState.fit === 'width')
         ? availW / base.width
         : Math.min(availW / base.width, availH / base.height);
+      var cssW1 = base.width * fitScale, cssH1 = base.height * fitScale; /* 100%일 때 화면 크기 */
       var scale = fitScale * pdfState.zoom;
 
       var ratio = Math.min(window.devicePixelRatio || 1, 2);
       var viewport = page.getViewport({ scale: scale * ratio });
-      var maxPixels = 20e6;
+      var maxPixels = 16e6; /* iOS 사파리 캔버스 한도(약 16.7M px) 이하로 */
       var area = viewport.width * viewport.height;
       if (area > maxPixels){
-        ratio = Math.max(1, ratio * Math.sqrt(maxPixels / area));
+        ratio = Math.max(0.5, ratio * Math.sqrt(maxPixels / area));
         viewport = page.getViewport({ scale: scale * ratio });
       }
 
       cancelRender();
-      var canvas = el('pdfCanvas');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.style.width = (viewport.width / ratio) + 'px';
-      canvas.style.height = (viewport.height / ratio) + 'px';
-      setStage('ready');
+      var off = document.createElement('canvas');
+      off.width = Math.floor(viewport.width);
+      off.height = Math.floor(viewport.height);
 
-      var task = page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport });
+      var task = page.render({ canvasContext: off.getContext('2d'), viewport: viewport });
       pdfState.task = task;
       task.promise.then(function(){
         if (token !== pdfState.token || seq !== pdfState.seq) return;
         pdfState.task = null;
+
+        var canvas = el('pdfCanvas');
+        pdfState.baseW = cssW1;
+        pdfState.baseH = cssH1;
+        canvas.width = off.width;
+        canvas.height = off.height;
+        canvas.style.width = (cssW1 * pdfState.zoom) + 'px';
+        canvas.style.height = (cssH1 * pdfState.zoom) + 'px';
+        canvas.getContext('2d').drawImage(off, 0, 0);
+        off.width = off.height = 0; /* 메모리 즉시 반환 */
+        setStage('ready');
+
         pdfState.page = num;
         updatePdfControls();
-        if (anchor){
-          stage.scrollLeft = anchor.x * stage.scrollWidth - stage.clientWidth / 2;
-          stage.scrollTop  = anchor.y * stage.scrollHeight - stage.clientHeight / 2;
-        } else {
+        if (mode !== 'keep'){
           stage.scrollTop = 0;
           stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
         }
       }).catch(function(){});
     });
+  }
+
+  /* ---------- 확대·축소 (지정한 화면 지점을 고정한 채로) ----------
+     먼저 CSS 크기만 바꿔 즉시 반응하게 하고, 손을 멈추면 고해상도로 다시 그림 */
+  function clamp01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+
+  function scheduleHiRes(){
+    cancelRender();
+    pdfState.seq++;              /* 진행 중이던 렌더링 결과는 버림 */
+    clearTimeout(pdfState.hiTimer);
+    pdfState.hiTimer = setTimeout(function(){ renderPdfPage(pdfState.page, 'keep'); }, 180);
+  }
+
+  /* z: 목표 배율 · (cx, cy): 고정할 화면 좌표 · (rx, ry): 그 지점에 둘 페이지 위 비율 좌표(생략 시 현재 커서 아래 지점) */
+  function zoomAt(z, cx, cy, rx, ry){
+    var stage = el('pdfStage'), canvas = el('pdfCanvas');
+    if (!pdfState.doc || !pdfState.baseW || canvas.style.display === 'none') return;
+    z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    if (Math.abs(z - pdfState.zoom) < 0.0005) return;
+
+    var r0 = canvas.getBoundingClientRect();
+    if (rx == null){
+      rx = clamp01((cx - r0.left) / Math.max(1, r0.width));
+      ry = clamp01((cy - r0.top) / Math.max(1, r0.height));
+    }
+
+    pdfState.zoom = z;
+    var w = pdfState.baseW * z, h = pdfState.baseH * z;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+
+    var r1 = canvas.getBoundingClientRect();
+    stage.scrollLeft += (r1.left + rx * w) - cx;
+    stage.scrollTop  += (r1.top  + ry * h) - cy;
+
+    updatePdfControls();
+    scheduleHiRes();
+  }
+
+  function zoomAtCenter(z){
+    var r = el('pdfStage').getBoundingClientRect();
+    zoomAt(z, r.left + r.width / 2, r.top + r.height / 2);
   }
 
   function updatePdfControls(){
@@ -2585,17 +2641,12 @@
     var fitBtn = el('fitBtn');
     fitBtn.textContent = (pdfState.fit === 'width') ? '가로 맞춤' : '전체 맞춤';
     fitBtn.classList.toggle('width', pdfState.fit === 'width');
-    stage.classList.toggle('can-page', stage.scrollHeight <= stage.clientHeight + 2);
+    stage.classList.toggle('can-pan', stage.scrollWidth > stage.clientWidth + 1 || stage.scrollHeight > stage.clientHeight + 1);
   }
 
   function pdfZoom(dir){
     if (!pdfState.doc) return;
-    var z = Math.round((pdfState.zoom + dir * ZOOM_STEP) * 100) / 100;
-    z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
-    if (z === pdfState.zoom) return;
-    pdfState.zoom = z;
-    el('zoomLevel').textContent = Math.round(z * 100) + '%';
-    renderPdfPage(pdfState.page, true);
+    zoomAtCenter(Math.round((pdfState.zoom + dir * ZOOM_STEP) * 100) / 100);
   }
 
   function pdfZoomReset(){
@@ -2627,7 +2678,8 @@
     el('modalOverlay').classList.remove('open');
     document.body.style.overflow = '';
     cancelRender();
-    pdfState = { doc:null, page:1, total:0, token:pdfState.token + 1, task:null, zoom:1, fit:'auto', wheelAt:0, seq:0 };
+    clearTimeout(pdfState.hiTimer);
+    pdfState = { doc:null, page:1, total:0, token:pdfState.token + 1, task:null, zoom:1, fit:'auto', seq:0, baseW:0, baseH:0, hiTimer:null };
     if (lastFocused && typeof lastFocused.focus === 'function'){
       try { lastFocused.focus(); } catch(e){}
     }
@@ -2653,22 +2705,81 @@
     }
   }
 
-  el('pdfCanvas').addEventListener('click', function(e){
-    var stage = el('pdfStage');
-    if (stage.scrollHeight > stage.clientHeight + 2) return; /* 확대/세로 스크롤 중에는 페이지 이동 안 함 */
-    var rect = this.getBoundingClientRect();
-    if (e.clientX - rect.left > rect.width / 2) pdfNextPage(); else pdfPrevPage();
-  });
+  /* ---------- PDF 조작: 휠 확대 · 드래그 이동 · 핀치 확대 ---------- */
+  (function(){
+    var stage = el('pdfStage'), canvas = el('pdfCanvas');
 
-  /* Ctrl(⌘) + 휠로 확대·축소 */
-  el('pdfStage').addEventListener('wheel', function(e){
-    if (!pdfState.doc || !(e.ctrlKey || e.metaKey)) return;
-    e.preventDefault();
-    var now = Date.now();
-    if (now - pdfState.wheelAt < 130) return;
-    pdfState.wheelAt = now;
-    pdfZoom(e.deltaY < 0 ? 1 : -1);
-  }, { passive:false });
+    /* 1) 마우스 휠 = 커서 위치 기준 확대·축소 (트랙패드 핀치(ctrl+휠)도 동일) */
+    stage.addEventListener('wheel', function(e){
+      if (!pdfState.doc || !pdfState.baseW) return;
+      if (!e.ctrlKey && Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; /* 가로 스크롤은 그대로 이동 */
+      e.preventDefault();
+      var dy = e.deltaY * (e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? 400 : 1));
+      dy = Math.max(-120, Math.min(120, dy));
+      var k = e.ctrlKey ? 0.01 : 0.0018;
+      zoomAt(pdfState.zoom * Math.exp(-dy * k), e.clientX, e.clientY);
+    }, { passive:false });
+
+    /* 2) 마우스 왼쪽 버튼을 누른 채 끌면 화면 이동 (클릭해도 페이지는 넘어가지 않음) */
+    var drag = null;
+    function canPan(){
+      return stage.scrollWidth > stage.clientWidth + 1 || stage.scrollHeight > stage.clientHeight + 1;
+    }
+    stage.addEventListener('pointerdown', function(e){
+      if (e.pointerType !== 'mouse' || e.button !== 0 || !pdfState.doc || !canPan()) return;
+      e.preventDefault();
+      drag = { id:e.pointerId, x:e.clientX, y:e.clientY, sl:stage.scrollLeft, st:stage.scrollTop };
+      try { stage.setPointerCapture(e.pointerId); } catch(err){}
+      stage.classList.add('is-dragging');
+    });
+    stage.addEventListener('pointermove', function(e){
+      if (!drag || e.pointerId !== drag.id) return;
+      stage.scrollLeft = drag.sl - (e.clientX - drag.x);
+      stage.scrollTop  = drag.st - (e.clientY - drag.y);
+    });
+    function endDrag(e){
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      drag = null;
+      stage.classList.remove('is-dragging');
+    }
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+    stage.addEventListener('lostpointercapture', endDrag);
+    canvas.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+    /* 3) 모바일: 두 손가락 핀치로 확대·축소 (두 손가락을 함께 움직이면 이동)
+          한 손가락 드래그는 브라우저 기본 스크롤로 확대된 화면을 옮김 */
+    var pinch = null;
+    function mid(t){ return { x:(t[0].clientX + t[1].clientX) / 2, y:(t[0].clientY + t[1].clientY) / 2 }; }
+    function dist(t){ return Math.max(1, Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)); }
+
+    stage.addEventListener('touchstart', function(e){
+      if (!pdfState.doc || !pdfState.baseW || e.touches.length !== 2) return;
+      e.preventDefault();
+      var m = mid(e.touches), r = canvas.getBoundingClientRect();
+      pinch = {
+        d0: dist(e.touches), z0: pdfState.zoom,
+        rx: clamp01((m.x - r.left) / Math.max(1, r.width)),
+        ry: clamp01((m.y - r.top) / Math.max(1, r.height))
+      };
+    }, { passive:false });
+
+    stage.addEventListener('touchmove', function(e){
+      if (!pinch || e.touches.length !== 2) return;
+      e.preventDefault();
+      var m = mid(e.touches);
+      zoomAt(pinch.z0 * dist(e.touches) / pinch.d0, m.x, m.y, pinch.rx, pinch.ry);
+    }, { passive:false });
+
+    function endPinch(e){ if (pinch && e.touches.length < 2) pinch = null; }
+    stage.addEventListener('touchend', endPinch);
+    stage.addEventListener('touchcancel', endPinch);
+
+    /* iOS 사파리: 페이지 전체가 확대되는 기본 제스처 차단 */
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function(t){
+      stage.addEventListener(t, function(e){ e.preventDefault(); }, { passive:false });
+    });
+  })();
 
   document.addEventListener('keydown', function(e){
     if (!el('modalOverlay').classList.contains('open')) return;
